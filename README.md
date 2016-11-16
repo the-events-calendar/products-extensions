@@ -313,7 +313,7 @@ class Tribe__Extension__Hide_Tribe_Bar extends Tribe__Extension {
         $this->add_required_plugin( 'Tribe__Events__Main', '3.0' );
  
         // Set the extension's tec.com URL
-        $this->set_url( 'https://theeventscalendar.com/extensions/hide-tribe-bar/' )
+        $this->set_url( 'https://theeventscalendar.com/extensions/hide-tribe-bar/' );
     }
  
     /**
