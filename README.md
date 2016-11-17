@@ -51,7 +51,7 @@ Create a blank `index.php` file inside your new extension directory, and insert 
  */
  
 // Do not load directly.
-defined( 'WPINC' ) || die;
+if ( ! defined( 'ABSPATH' ) ) { die( '-1' ); }
 // Do not load unless Tribe Common is fully loaded.
 if ( ! class_exists( 'Tribe__Extension' ) ) { return; }
  
@@ -118,7 +118,7 @@ Everything within \[brackets\] should be modified.
     * Typically the class name is similar to the extension's folder name. If your folder is `tribe-ext-hide-tribe-bar` the full class name could be `Tribe__Extension__Hide_Tribe_Bar`.
     * For the full details on class naming conventions, see the [Tribe Products Coding Standards](http://moderntribe.github.io/products-engineering/guidelines/).
 
-The rest of the plugin header will stay the same in nearly every extension.
+The rest of the plugin header will stay the same in nearly every extension. For official extensions in particular the `Author` and `Author URI` should remain unmodified, this way they are consistent with the other Tribe Plugins and Extensions.
 
 ### Example
 
