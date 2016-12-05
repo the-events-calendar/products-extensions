@@ -4,9 +4,9 @@ Tribe Extensions are small plugins that add features to official Tribe plugins. 
 
 ## In this Guide
 
-* [Framework Features](@TODO)
-* [How to Create an Extension](@TODO)
- * [Step 1: Create a Plugin Folder](@TODO)
+* [Framework Features](#framework-features)
+* [How to Create an Extension](#how-to-create-an-extension)
+ * [Step 1: Create a Plugin Folder](#step-1-create-a-plugin-folder)
  * [Step 2: Copy the Template File](@TODO)
  * [Step 3: The Plugin Header](@TODO)
  * [Step 4: Rename Extension Class](@TODO)
