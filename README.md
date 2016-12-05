@@ -2,7 +2,24 @@
 
 Tribe Extensions are small plugins that add features to official Tribe plugins. They're designed to be installed and activated alongside the Tribe plugin that they extend. 
 
-### Features
+## In this Guide
+
+* [Framework Features](@TODO)
+* [How to Create an Extension](@TODO)
+ * [Step 1: Create a Plugin Folder](@TODO)
+ * [Step 2: Copy the Template File](@TODO)
+ * [Step 3: The Plugin Header](@TODO)
+ * [Step 4: Rename Extension Class](@TODO)
+ * [Step 5: Specify Extension Properties (Optional)](@TODO)
+ * [Step 6: Insert Your Custom Code](@TODO)
+* [A Complete Example](@TODO)
+* [Notes](@TODO)
+ * [Requirements](@TODO)
+ * [Standards](@TODO)
+ * [Updating an Extension](@TODO)
+ * [Separate File for the Extension Class](@TODO)
+
+# Framework Features
 
 The extension framework has an ever-growing list of benefits for the code that runs atop of it. 
 
@@ -12,13 +29,13 @@ Instead of writing a simple code snippet and pasting it in your theme's `functio
  * Most snippets require one or more plugins to be active, or else errors will be generated. These can be easily specified within the framework. If they are not present the admin may automatically receive a notice walking them through which plugins they need to download and install.
  
 * Communicates with Tribe plugins letting them know you're running.
- * Most modifications do not do this, and so the Tribe plugin does not know when it is being extended. 
+ * Most modifications _don't_ do this, so the Tribe plugin does not know when it is being extended. 
  
 * All future features—this framework is still young.
- * As time goes on more features will be added. Currently we are planning to add an update mechanism to the framework. For official extensions this will check to see if a new version is available, and allow users to update just like they would any other plugin. Extensions will automatically receive these new features when Tribe Common is updated in WordPress, so no changes to the extension itself will be necessary.
+ * As time goes on more features will be added. Current plans include adding an update mechanism to the framework, for example. Extensions will automatically receive these new features when Tribe Common is updated—which users will get via updates to The Events Calendar or Event Tickets—so no changes to the extension itself will be necessary.
  
 * All the benefits of turning a snippet into a plugin.
- * For instance, easy installation and deactivation, identifies itself in the system info, etc. 
+ * For instance: Easy installation and deactivation, each extension identifies itself in the system info, etc. 
 
 At times it won't  make sense to convert a snippet to an extension. Extensions are harder for users to modify than `functions.php` snippets, so **for snippets that are intended to be modified by the user, generally do not make them into extensions**—keep themas snippets.
 
@@ -26,7 +43,7 @@ At times it won't  make sense to convert a snippet to an extension. Extensions a
 
 This guide will walk you through each step for building an extension. The example we'll use is an extension that hides the Tribe Bar in The Events Calendar plugin.
 
-## Step 1) Create a Plugin Folder
+## Step 1: Create a Plugin Folder
 
 Begin by creating a new folder inside of your `/wp-content/plugins/` directory. In order for this extension to be automatically loaded (instantiated), prefix the folder name with `tribe-ext-`. Try to be succinct with the name of the extension folder, preferably keeping the full folder name under 35 characters.
 
@@ -40,7 +57,7 @@ tribe-ext-hide-tribe-bar
 
 For reference, this example folder name is 24 characters long.
 
-# Step 2) Copy the Template File
+## Step 2: Copy the Template File
 
 Create a blank `index.php` file inside your new extension directory, and insert the following template into it.
  
@@ -95,7 +112,7 @@ The contents of that template will go in this file:
 tribe-ext-hide-tribe-bar/index.php
 ```
 
-## Step 3) Plugin Header
+## Step 3: The Plugin Header
 
 The extension template begins with this block of code.
 
@@ -146,7 +163,7 @@ Following the above guidelines, the full header for our plugin that hides the Tr
  */
 ```
 
-## Step 4) Rename Extension Class
+## Step 4: Rename Extension Class
 
 The Extension Class name appears twice in a typical extension. Once in the plugin header, and then again in the class declaration:
 
@@ -164,7 +181,7 @@ Continuing with the Hide Tribe Bar example extension, our Extension Class will b
 class Tribe__Extension__Hide_Tribe_Bar extends Tribe__Extension {
 ```
 
-## Step 5) Specify Extension Properties (Optional)
+## Step 5: Specify Extension Properties (Optional)
 
 A variety of properties can be specified for an extension. Typically they are set within the public `construct()` function:
 
@@ -243,7 +260,7 @@ Replace the URL above with an absolute URL to the extension page.
 $this->set_url( 'https://theeventscalendar.com/extensions/hide-tribe-bar/' );
 ```
 
-## Step 6) Insert Your Custom Code
+## Step 6: Insert Your Custom Code
 
 Now the fun begins. Insert or begin writing your custom code inside of the init() function:
 
@@ -285,7 +302,7 @@ public function filter_template( $html, $template, $file, $slug, $name ) {
 
 Note how the callback was added add as a second public function called `filter_template`. 
 
-## Complete Example
+# A Complete Example
 
 Here is the finished Hide Tribe Bar extension example the above steps walked you through creating.
 
@@ -346,22 +363,22 @@ class Tribe__Extension__Hide_Tribe_Bar extends Tribe__Extension {
 }
 ```
 
-## Notes
+# Notes
 
-### Requirements
+## Requirements
 
 The Extension framework requires Tribe Common 4.3.3 or greater to be active on the website. Currently two plugins contain Tribe Common. If neither of these are active on the WordPress install, the extension will cease running without showing any errors or messages:
 * [The Events Calendar 4.3.3+](https://wordpress.org/plugins/the-events-calendar/)
 * [Event Tickets 4.3.3+](https://wordpress.org/plugins/event-tickets/)
 
-### Standards
+## Standards
 
 Official extensions adhere to the following code standards where applicable:
 
 * [Tribe Products Coding Standards](http://moderntribe.github.io/products-engineering/guidelines/)
 * [WordPress version of PHPDoc](https://make.wordpress.org/core/handbook/best-practices/inline-documentation-standards/php/)
 
-### Updating an Extension
+## Updating an Extension
 
 If you are updating an extension that is already in use by the general public, you will need to update the version number. The Version should follow the [Semantic Versioning](http://semver.org/) standard. The initial public release will always be `1.0.0`. From there the major, minor, and patch versions will be incremented with each release, depending on what type of change was made in the update.
 
@@ -377,7 +394,7 @@ $this->set_version( '1.0.1' );
 
 If you are wondering why you should specify the version number twice when you update an extension, read on. Typically the version number for the extension is read from the plugin header and then cached in the database for optimum performance. Each time an extension is updated or installed via WP Admin, this cache is rebuilt. However, when a manual update occurs the cache might not get rebuilt, and so the Extension Framework will continue thinking the old version of your extension is present. Specifying the version number, as outlined above, will rebuild the cache when an extension is manually updated.
 
-### Separate File for the Extension Class
+## Separate File for the Extension Class
 
 The `index.php` inside your extension folder should always be present and contain the plugin header. However, you can place the Extension Class within a separate file inside of your extension's plugin folder. If you do this you can tell the Extension Framework to load this class file by adding a new line to the `index.php` plugin header. If your class file is called `extension.php`, this would be the new line:
 
