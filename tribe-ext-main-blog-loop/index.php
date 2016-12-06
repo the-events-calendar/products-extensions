@@ -33,7 +33,8 @@ class Tribe__Extension__Main_Blog_Loop extends Tribe__Extension {
 	 * This always executes even if the required plugins are not present.
 	 */
 	public function construct() {
-		$this->add_required_plugin( 'Tribe__Events__Main', '3.12' );
+		$this->add_required_plugin( 'Tribe__Events__Main' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/the-events-calendar-main-blog-loop/' );
 	}
 
 	/**

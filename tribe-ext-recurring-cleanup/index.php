@@ -29,6 +29,8 @@ class Tribe__Extension__Recurring_Cleanup extends Tribe__Extension {
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main' );
 		$this->add_required_plugin( 'Tribe__Events__Pro__Main' );
+
+		$this->set_url( 'https://theeventscalendar.com/extensions/the-events-calendar-pro-cleanup-recurring-events/' );
 	}
 
 	/**
