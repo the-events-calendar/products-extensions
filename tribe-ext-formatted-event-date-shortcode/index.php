@@ -70,7 +70,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	 * Extension initialization and hooks.
 	 */
 	public function init() {
-		add_shortcode( $this->shortcode_name, array( $this, 'tribe_formatted_event_date_logic' ) );
+		add_shortcode( $this->shortcode_name, array( $this, 'shortcode_output' ) );
 	}
 		
 	/**
@@ -78,7 +78,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	 *
 	 * @return false|string
 	 */
-	public function tribe_formatted_event_date_logic( $atts ) {
+	public function shortcode_output( $atts ) {
 		$defaults = array(
 			'id'		=> get_the_ID(), // Post ID of a single Event
 			'timezone'	=> '', // example: 'America/Chicago' -- see http://php.net/manual/en/timezones.php
