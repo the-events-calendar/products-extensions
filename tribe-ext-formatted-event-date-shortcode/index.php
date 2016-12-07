@@ -63,7 +63,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.3.3' );
 		
 		// Set the extension's TEC URL
-		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' )
+		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );
 	}
 	
 	/**
