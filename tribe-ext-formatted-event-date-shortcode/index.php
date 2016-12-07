@@ -14,26 +14,7 @@
 // Turned into an Extension by Cliff on 2016-12-06
 
 /*
-*** Usage Examples: ***
-
-1)
-Output Event ID 1234's Start Date, like
-*** August 2, 2017 at 4:00pm ***
-(notice double escaping the word "at")
-[tribe_formatted_event_date id=1234 format="F j, Y \\a\\t g:ia"]
-
-2)
-Output Event ID 1234's End Date in a different timezone, like
-*** 02nd August, 2017 @ 18:00 PM ***
-[tribe_formatted_event_date id=1234 timezone="America/New_York" format="dS F, Y @ G:i A" start_end="end"]
-
 NOTE: Timezones (including timezone abbreviations) are not allowed in the "format" shortcode argument; they will be removed. Therefore, if the event is 11am CST but you want to display it as 12pm EST, you will need to add the "EST" manually after (i.e. outside of) the shortcode.
-
-3)
-Output current single Event's/post's Start Date like
-*** 02nd August 2017 ***
-[tribe_formatted_event_date format="dS F Y"]
-
 */
 
 // Do not load directly.
@@ -72,9 +53,13 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	public function init() {
 		add_shortcode( $this->shortcode_name, array( $this, 'shortcode_output' ) );
 	}
-		
+	
 	/**
 	 * Logic for the shortcode.
+	 * Examples:
+	 * 1) [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia"] (notice double escaping the word "at") -- Outputs "August 2, 2017, at 4:00pm" for Event/Post ID 1234's start datetime
+	 * 2) [tribe_formatted_event_date id=1234 timezone="America/New_York" format="dS F, Y @ G:i A" start_end="end"] -- Outputs "02nd August, 2017 @ 18:00 PM" for Event/Post ID 1234's end datetime in a specific timezone
+	 * 3) [tribe_formatted_event_date format="dS F Y"] -- Outputs "02nd August 2017" for the current post ID's start datetime
 	 *
 	 * @return false|string
 	 */
@@ -112,7 +97,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 			}
 		}
 		
-		
+		// if $format is empty, will get defaulted to the format from https://theeventscalendar.com/function/tribe_format_date/
 		$format = trim( $atts['format'] );
 		
 		// Unless we do something like http://stackoverflow.com/a/35474695, the timezone format will always output WordPress' timezone, not each event's.
