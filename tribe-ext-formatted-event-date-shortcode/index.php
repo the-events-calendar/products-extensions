@@ -1,7 +1,7 @@
 <?php
 /**
 * Plugin Name: The Events Calendar Extension: Formatted Event Date Shortcode
-* Description: Output event Start Time or End Time in <a href="http://php.net/manual/en/function.date.php" target="_blank">whatever valid date/time format you want</a>. Example: [tribe_formatted_event_date id=1234 format="F jS, Y" timezone="America/New_York"] would output like "August 2nd, 2017". <strong>NOTE:</strong> "T" and other timezone output formats will be stripped from the "format" argument <em>if</em> you specify a "timezone" argument as to avoid misstatements because "T" and others will output your WordPress timezone, not taking into account this shortcode's "timezone" argument.
+* Description: Output event Start Time or End Time in <a href="http://php.net/manual/en/function.date.php" target="_blank">whatever valid date/time format you want</a>. Example: [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia T" timezone="America/New_York"] would output Event ID 1234's start date (which is 11am in America/Chicago) like this: "August 2, 2017, at 12:00pm EST"
 * Version: 1.0.0
 * Extension Class: Tribe__Extension__Formatted_Event_Date_Shortcode
 * Author: Modern Tribe, Inc.
@@ -11,11 +11,7 @@
 */
 
 // Created 2016-09-15 for https://theeventscalendar.com/support/forums/topic/_eventstartdate-format/
-// Turned into an Extension by Cliff on 2016-12-06
-
-/*
-NOTE: Timezones (including timezone abbreviations) are not allowed in the "format" shortcode argument; they will be removed. Therefore, if the event is 11am CST but you want to display it as 12pm EST, you will need to add the "EST" manually after (i.e. outside of) the shortcode.
-*/
+// Turned into an Extension by Cliff on 2016-12-07
 
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -34,14 +30,40 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	// Define the shortcode name
 	public $shortcode_name = 'tribe_formatted_event_date';
 	
+	// Array of the possible values from the "Timezone" section of the table at http://php.net/manual/en/function.date.php
+	private $timezone_formats = array(
+		'e',
+		'I',
+		'O',
+		'P',
+		'T',
+		'Z',
+	);
+	
+	// Same as $this->timezone_formats except in regex format, e.g. for preg_match and preg_replace
+	private $timezone_formats_regex = array(
+		'/e/',
+		'/I/',
+		'/O/',
+		'/P/',
+		'/T/',
+		'/Z/',
+	);
+	
+	// Temporary placeholder to be replaced with manually-created timezone format string
+	// Make sure no character is one from http://php.net/manual/en/function.date.php
+	private $timezone_temp_placeholder = '----';
+	
 	/**
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
+	 * 
+	 * @access: public
 	 */
 	public function construct() {
 		// Each plugin required by this extension
-		$this->add_required_plugin( 'Tribe__Events__Main', '4.3.3' );
+		$this->add_required_plugin( 'Tribe__Events__Main', '4.0' ); // main thing we are concerned about is '_EventTimezone' meta key, but there are protections here against it not existing anyway
 		
 		// Set the extension's TEC URL
 		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );
@@ -49,9 +71,41 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	
 	/**
 	 * Extension initialization and hooks.
+	 * 
+	 * @access: public
 	 */
 	public function init() {
 		add_shortcode( $this->shortcode_name, array( $this, 'shortcode_output' ) );
+	}
+	
+	/**
+	 * Outputs various timezone formats manually
+	 * Unless we manually do this here, the "raw" timezone format would output in WordPress' timezone (i.e. static, not dynamic to the event), which is inaccurate and confusing.
+	 *
+	 * @access: private
+	 *
+	 * @return: string
+	 */
+	private function get_timezone_format_as_esc_string( $timezone_format, $timezone ) {
+		if ( empty( $timezone_format ) || empty( $timezone ) ) {
+			return '';
+		}
+		
+		// based on http://stackoverflow.com/a/35474695
+		$dateTime = new DateTime();
+		$dateTime->setTimeZone( new DateTimeZone( $timezone ) ); 
+		$timezone_result = $dateTime->format( $timezone_format );
+		
+		// some of the timezone formats output a number, like: "1", "+0200", or "-43200" (without quotes)
+		if ( ! is_numeric( $timezone_result ) // I, O, Z
+			&&  false === strpos( $timezone_result, ':' ) // P
+		) {
+			$array = str_split( $timezone_result );
+			
+			$timezone_result = '\\' . implode( '\\', $array );
+		}
+		
+		return $timezone_result;
 	}
 	
 	/**
@@ -60,6 +114,8 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	 * 1) [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia"] (notice double escaping the word "at") -- Outputs "August 2, 2017, at 4:00pm" for Event/Post ID 1234's start datetime
 	 * 2) [tribe_formatted_event_date id=1234 timezone="America/New_York" format="dS F, Y @ G:i A" start_end="end"] -- Outputs "02nd August, 2017 @ 18:00 PM" for Event/Post ID 1234's end datetime in a specific timezone
 	 * 3) [tribe_formatted_event_date format="dS F Y"] -- Outputs "02nd August 2017" for the current post ID's start datetime
+	 * 
+	 * @access: public
 	 *
 	 * @return false|string
 	 */
@@ -100,19 +156,29 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		// if $format is empty, will get defaulted to the format from https://theeventscalendar.com/function/tribe_format_date/
 		$format = trim( $atts['format'] );
 		
-		// Unless we do something like http://stackoverflow.com/a/35474695, the timezone format will always output WordPress' timezone, not each event's.
+		// Massage the $format to allow outputting the FIRST timezone format.
+		// LIMITATION: if a letter is escaped but it is the first that matches a timezone format, we do not test for this and it will not actually get escaped as intended, if at all.
+		// If more than one timezone format is used, all but the FIRST will be fully ignored.
 		if ( ! empty( $format ) ) {
-			// from "Timezone" section of the table at http://php.net/manual/en/function.date.php
-			$formats_to_remove = array(
-				'e',
-				'I',
-				'O',
-				'P',
-				'T',
-				'Z',
-			);
+			// get the first timezone format
+			$timezone_format = '';
+			foreach ( $this->timezone_formats as $key => $value ) {
+				if ( false !== strpos( $format, $value ) ) {
+					$timezone_format = substr( $format, strpos( $format, $value ), 1 );
+					break;
+				}
+			}
 			
-			$format = trim( str_replace( $formats_to_remove, '', $format ) );
+			// replace the first timezone format with a placeholder for later
+			$format = preg_replace( $this->timezone_formats_regex, $this->timezone_temp_placeholder, $format, 1 );
+			
+			// get rid of all other timezone formats
+			$format = str_replace( $this->timezone_formats, '', $format );
+			
+			// inject manual timezone format as escaped string so it will not be converted to a datetime format
+			$format = str_replace( $this->timezone_temp_placeholder, $this->get_timezone_format_as_esc_string( $timezone_format, $timezone ), $format );
+			
+			$format = trim( $format );
 		}
 		
 		$start_end = trim( $atts['start_end'] );
