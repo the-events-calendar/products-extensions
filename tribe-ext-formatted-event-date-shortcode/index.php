@@ -36,8 +36,6 @@ Output current single Event's/post's Start Date like
 
 */
 
-
-
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
@@ -46,9 +44,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( 'Tribe__Extension' ) ) {
    return;
 }
-
-
-
 
 /**
 * Extension main class, class begins loading on init() function.
@@ -64,14 +59,11 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	 * This always executes even if the required plugins are not present.
 	 */
 	public function construct() {
-		// add version here in addition to the header comment if/when there is an update to this extension
-		// $this->set( 'version', '1.0.0' );
-		
 		// Each plugin required by this extension
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.3.3' );
 		
-		// Set the extension's tec.com URL
-		// $this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' )
+		// Set the extension's TEC URL
+		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' )
 	}
 	
 	/**
@@ -148,7 +140,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 			return false; // bad entry
 		}
 		
-		if ( 'start' == $start_end ) {
+		if ( 'start' === $start_end ) {
 			// https://theeventscalendar.com/function/tribe_get_start_date/
 			$event_date = tribe_get_start_date( $id, true, $format, $timezone );
 		} else { // 'end'
