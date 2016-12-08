@@ -1,6 +1,8 @@
 <?php
-
-defined( 'WPINC' ) || die;
+// Do not load directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	die( '-1' );
+}
 
 if ( class_exists( 'Tribe__Settings_Helper' ) ) {
 	return;
