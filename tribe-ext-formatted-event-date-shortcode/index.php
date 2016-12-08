@@ -50,10 +50,6 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		'/Z/',
 	);
 	
-	// Temporary placeholder to be replaced with manually-created timezone format string
-	// Make sure no character is one from http://php.net/manual/en/function.date.php
-	private $timezone_temp_placeholder = '----';
-	
 	/**
 	 * Setup the Extension's properties.
 	 *
@@ -169,14 +165,18 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 				}
 			}
 			
+			// Temporary placeholder to be replaced with manually-created timezone format string
+			// Make sure no character is one from http://php.net/manual/en/function.date.php
+			$timezone_temp_placeholder = '$$$$';
+			
 			// replace the first timezone format with a placeholder for later
-			$format = preg_replace( $this->timezone_formats_regex, $this->timezone_temp_placeholder, $format, 1 );
+			$format = preg_replace( $this->timezone_formats_regex, $timezone_temp_placeholder, $format, 1 );
 			
 			// get rid of all other timezone formats
 			$format = str_replace( $this->timezone_formats, '', $format );
 			
 			// inject manual timezone format as escaped string so it will not be converted to a datetime format
-			$format = str_replace( $this->timezone_temp_placeholder, $this->get_timezone_format_as_esc_string( $timezone_format, $timezone ), $format );
+			$format = str_replace( $timezone_temp_placeholder, $this->get_timezone_format_as_esc_string( $timezone_format, $timezone ), $format );
 			
 			$format = trim( $format );
 		}
