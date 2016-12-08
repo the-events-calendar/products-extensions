@@ -246,10 +246,10 @@ If your extension requires one or more of those plugins to be present, make sure
 The Hide Tribe Bar extension requires that The Events Calendar 3.0 or greater is present. This line is the only one needed to specify that:
 
 ```
-$this->add_required_plugin( 'Tribe__Events__Main', '4.3' );
+$this->add_required_plugin( 'Tribe__Events__Main', '3.0' );
 ```
 
-⚠️ **Note: All extensions require Tribe Common 4.3.3 or greater to be active.** This means The Events Calendar 4.3.3 or higher, or Event Tickets 4.3.3 or higher.
+Note: All extensions require Tribe Common 4.3.3 or greater to be active. The Events Calendar 3.0 did not include that library. It would take exotic circumstance for an extension to run on an older version like 3.0. For example, if Event Tickets 4.3.3 was active and working properly, then this version comparison would run. If Event Tickets was not active, nor any other plugin that includes Tribe Common, the Extension would cease running even before a version comparison was made.
 
 ### Specify Extension URL (optional)
 
