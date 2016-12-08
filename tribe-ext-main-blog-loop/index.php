@@ -67,8 +67,8 @@ class Tribe__Extension__Main_Blog_Loop extends Tribe__Extension {
 				'size'            => 'small',
 				'default'         => 'event_date',
 				'options'         => array(
-					'event_date' => __( 'Event Date', 'tribe-extension' ),
-					'published' => __( 'Published', 'tribe-extension' ),
+					'event_date' => esc_html__( 'Event Date', 'tribe-extension' ),
+					'published' => esc_html__( 'Published', 'tribe-extension' ),
 				),
 			),
 			'general',
