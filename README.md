@@ -77,9 +77,14 @@ Create a blank `index.php` file inside your new extension directory, and insert 
  */
  
 // Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) { die( '-1' ); }
+if ( ! defined( 'ABSPATH' ) ) {
+    die( '-1' );
+}
+
 // Do not load unless Tribe Common is fully loaded.
-if ( ! class_exists( 'Tribe__Extension' ) ) { return; }
+if ( ! class_exists( 'Tribe__Extension' ) ) {
+    return;
+}
  
 /**
  * Extension main class, class begins loading on init() function.
@@ -204,7 +209,9 @@ If your extension has no arguments it needs to set, you can delete this entire b
 
 ### Specify Tribe Plugins Required by the Extension (Optional)
 
-Any Tribe Plugins that this Extensions needs to be present should be specified within the `construct()` function. Inserting this line indicates that it requires The Events Calendar version 4.3 or greater to be active for our example extension to run:
+**Any Tribe plugins that this Extensions needs to be present should be specified within the `construct()` function.** 
+
+Inserting this line indicates that it requires The Events Calendar version 4.3 or greater to be active for our example extension to run:
 
 ```
 $this->add_required_plugin( 'Tribe__Events__Main', '4.3' );
@@ -318,12 +325,17 @@ Here is the finished Hide Tribe Bar extension example the above steps walked you
  * License:         GPLv2 or later
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  */
- 
+
 // Do not load directly.
-defined( 'WPINC' ) || die;
+if ( ! defined( 'ABSPATH' ) ) {
+    die( '-1' );
+}
+
 // Do not load unless Tribe Common is fully loaded.
-if ( ! class_exists( 'Tribe__Extension' ) ) { return; }
- 
+if ( ! class_exists( 'Tribe__Extension' ) ) {
+    return;
+}
+
 /**
  * Extension main class, class begins loading on init() function.
  */
