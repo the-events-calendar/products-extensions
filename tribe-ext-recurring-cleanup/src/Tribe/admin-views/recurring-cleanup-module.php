@@ -3,7 +3,7 @@
 	<p><?php _e( 'If your site is loading slow due to a lot of event recurrences this tool can help clean them up with great speed.', 'tribe-extension' ); ?></p>
 	<ol>
 		<li><?php _e( 'To start <a href="https://codex.wordpress.org/WordPress_Backups">make a backup of your database</a>, just to be safe.', 'tribe-extension' ); ?></li>
-		<li><?php _e( 'Doublecheck your <a href="edit.php?post_type=tribe_events&page=tribe-common">Event Settings</a>. Can you adjust the "Create recurring events in advance for" or "Clean up recurring events after" to smaller numbers?', 'tribe-extension' ); ?></li>
+		<li><?php _e( 'Double-check your <a href="edit.php?post_type=tribe_events&page=tribe-common">Event Settings</a>. Can you adjust the "Create recurring events in advance for" or "Clean up recurring events after" to smaller numbers?', 'tribe-extension' ); ?></li>
 		<li><?php _e( 'Obtain the ID for the event series you wish to cleanup. The table below will show which event IDs have the most recurrences. Events with more recurrences have a larger performance impact on your site.', 'tribe-extension' ); ?></li>
 		<li><?php _e( 'Try editing the event and adjusting it\'s recurrence pattern. Can you set it to end after fewer recurrences? If so hit save and and a progress bar will show up gradually deleting those recurrences.', 'tribe-extension' ); ?></li>
 		<li><?php _e( 'If editing the event does not work or is too slow for your needs, the following form can be used to delete <em>all</em> recurrences for that event.', 'tribe-extension' ); ?></li>

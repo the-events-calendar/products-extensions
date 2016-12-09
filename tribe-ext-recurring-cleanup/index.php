@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:     The Events Calendar PRO Extension: Cleanup recurring events
+ * Plugin Name:     The Events Calendar PRO Extension: Cleanup Recurring Events
  * Description:     Adds a recurring event cleanup tool to WP Admin > Tools > Available tools.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__Recurring_Cleanup
@@ -9,12 +9,16 @@
  * License:         GPLv2 or later
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  */
-defined( 'WPINC' ) or die;
 
 // Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) { die( '-1' ); }
+if ( ! defined( 'ABSPATH' ) ) {
+	die( '-1' );
+}
+
 // Do not load unless Tribe Common is fully loaded.
-if ( ! class_exists( 'Tribe__Extension' ) ) { return; }
+if ( ! class_exists( 'Tribe__Extension' ) ) {
+	return;
+}
 
 /**
  * Extension main class, class begins loading on init() function.
@@ -47,20 +51,20 @@ class Tribe__Extension__Recurring_Cleanup extends Tribe__Extension {
 
 		// Process delete event form.
 		if (
-			isset( $_POST['tribe-recurring-cleanup-eventid'] )&&
+			isset( $_POST['tribe-recurring-cleanup-eventid'] ) &&
 			isset( $_POST['tribe-recurring-cleanup-backup-confirmation'] ) &&
 			isset( $_POST['tribe-recurring-cleanup-submit'] ) &&
 			check_ajax_referer( 'tribe-recurring-cleanup' )
 		) {
 			$event_id = intval( $_POST['tribe-recurring-cleanup-eventid'] );
 			$this->delete_recurrence( intval( $_POST['tribe-recurring-cleanup-eventid'] ) );
-			$notifications = __( 'Recurrences deleted for event ID ', 'tribe-extension' ) . $event_id;
+			$notifications = esc_html__( 'Recurrences deleted for event ID ', 'tribe-extension' ) . $event_id;
 		}
 
 		$recurrence_table_headings = array(
-			__( 'Event', 'tribe-extension' ),
-			__( 'ID', 'tribe-extension' ),
-			__( '# of recurrences', 'tribe-extension' ),
+			esc_html__( 'Event', 'tribe-extension' ),
+			esc_html__( 'ID', 'tribe-extension' ),
+			esc_html__( '# of recurrences', 'tribe-extension' ),
 		);
 		$recurrence_table_cells = $this->get_recurring_event_table_cells();
 		$simple_table = new Tribe__Simple_Table( $recurrence_table_cells, $recurrence_table_headings );
@@ -104,7 +108,7 @@ class Tribe__Extension__Recurring_Cleanup extends Tribe__Extension {
 	/**
 	 * Gets a list of events with many recurrences.
 	 *
-	 * @return array Each one an HTML <a> link to an event series.
+	 * @return array Each one an HTML link element to an event series.
 	 */
 	protected function get_recurring_event_table_cells() {
 		$recurrence_count_results = $this->get_recurring_event_list();
