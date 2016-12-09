@@ -14,6 +14,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
 }
+
 // Do not load unless Tribe Common is fully loaded.
 if ( ! class_exists( 'Tribe__Extension' ) ) {
 	return;
@@ -188,7 +189,7 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 	/**
 	 * Get an HTML link to the General settings tab
 	 *
-	 * @return string <a> link to the general settings tab
+	 * @return string HTML link element to the general settings tab
 	 */
 	protected function general_settings_tab_link() {
 		$url = Tribe__Settings::instance()->get_url( array( 'tab' => 'general' ) );
