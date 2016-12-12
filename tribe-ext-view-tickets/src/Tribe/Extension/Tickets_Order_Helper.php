@@ -9,7 +9,7 @@ if ( class_exists( 'Tribe__Extension__Tickets_Order_Helper' ) ) {
 }
 
 /**
- * Class Tribe__Extension__Tickets_Order_Helper
+ * Helps get the Event IDs, attendees, and ticket provider associated with an order ID
  */
 class Tribe__Extension__Tickets_Order_Helper {
 
