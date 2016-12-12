@@ -41,13 +41,7 @@ class Tribe__Extension__Tickets_Order_Helper {
 	 */
 	public function __construct( $order_id ) {
 		$this->order_id = intval( $order_id );
-
-		$class = $this->set_provider_classname();
-
-		if ( ! empty( $class ) ) {
-			$this->provider_classname = $class;
-			$this->provider_instance = $class::get_instance();
-		}
+		$this->set_provider_classname();
 	}
 
 	/*
@@ -57,22 +51,27 @@ class Tribe__Extension__Tickets_Order_Helper {
 	 */
 	protected function set_provider_classname() {
 		$ticket_modules = Tribe__Tickets__Tickets::modules();
+		$class_name = null;
 
 		// Accounts for RSVPs not having grouped orders.
 		if ( Tribe__Tickets__RSVP::ATTENDEE_OBJECT === get_post_type( $this->order_id ) ) {
-			return 'Tribe__Tickets__RSVP';
+			$class_name = 'Tribe__Tickets__RSVP';
 		}
 
-		foreach ( $ticket_modules as $class_name => $description ) {
-			$event_id = $class_name::get_instance()->get_event_id_from_order_id( $this->order_id );
+		foreach ( $ticket_modules as $module_class => $module_description ) {
+			$event_id = $module_class::get_instance()->get_event_id_from_order_id( $this->order_id );
 
-			// This instance is the correct ticket provider
+			// This instance is the correct ticket provider.
 			if ( false !== $event_id ) {
-				return $class_name;
+				$class_name = $module_class;
+				break;
 			}
 		}
 
-		return null;
+		if ( null !== $class_name ) {
+			$this->provider_classname = $class_name;
+			$this->provider_instance = $class_name::get_instance();
+		}
 	}
 
 	/**
