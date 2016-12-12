@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     Event Tickets Plus Extension: Show and Print tickets
- * Description:     Adds option for viewing and printing tickets in the admin area. Currently supports WooCommerce, you can view tickets by going to the order in the admin area and clicking Order Actions > View Tickets.
+ * Description:     Adds option for viewing and printing tickets. In the admin area hover over an item in the Attendee List and click "View Tickets". Or, a ticket holder can view them from the frontend in their list of tickets for an event.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__View_Print_Tickets
  * Author:          Modern Tribe, Inc.
@@ -33,22 +33,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	public $view_ticket_url_key = 'tribe_view_ticket_order';
 
 	/**
-	 * URL key for specifying a ticket provider
-	 *
-	 * @var string
-	 */
-	public $view_ticket_url_key_type = 'tribe_view_order_type';
-
-	/**
-	 * @var int Contains the requested order #
-	 */
-	protected $order_id;
-	/**
-	 * @var string Contains the order type, such as 'Woo'
-	 */
-	protected $order_type;
-
-	/**
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
@@ -64,95 +48,121 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * Extension initialization and hooks.
 	 */
 	public function init() {
-		add_action( 'wp_loaded', array( $this, 'show_page' ) );
+		add_action( 'wp_loaded', array( $this, 'show_ticket_page' ) );
 		add_filter( 'woocommerce_order_actions', array( $this, 'add_woo_view_action' ) );
 		add_action( 'woocommerce_order_action_tribe_view_ticket', array( $this, 'forward_woo_action' ) );
+		add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'event_tickets_orders_attendee_contents' ), 0, 2 );
+		add_action( 'event_tickets_orders_attendee_contents', array( $this, 'event_tickets_orders_attendee_contents' ), 10, 2 );
 	}
 
-	public function show_page() {
-		if ( ! isset( $_GET[ $this->view_ticket_url_key ] ) || ! isset( $_GET[ $this->view_ticket_url_key_type ] ) ) {
+	/**
+	 * Displays ticket order when the URL contains a view ticket action
+	 */
+	public function show_ticket_page() {
+		if ( ! isset( $_GET[ $this->view_ticket_url_key ] ) ) {
 			return;
 		}
 
-		if ( ! current_user_can( 'edit_others_tribe_events' ) ) {
+		// Include the class and functions that power this.
+		require_once( 'src/functions/general.php' );
+		require_once( 'src/Tribe/Extension/Tickets_Order_Helper.php' );
+
+		$order_id = intval( $_GET[ $this->view_ticket_url_key ] );
+		$order_helper = new Tribe__Extension__Tickets_Order_Helper( $order_id );
+		$ticket_provider = $order_helper->get_provider_instance();
+
+		if ( empty( $ticket_provider ) ) {
 			return;
 		}
 
-		$this->order_id = intval( $_GET[ $this->view_ticket_url_key ] );
-		$this->order_type = (string) $_GET[ $this->view_ticket_url_key_type ];
+		$attendees = $order_helper->get_attendees();
+		$holder_email = isset( $attendees[0]['purchaser_email'] ) ? $attendees[0]['purchaser_email'] : null;
+		$current_user = wp_get_current_user();
 
-		$ticket_provider = get_post_type( $this->order_id );
-
-		
-
-		Tribe__Tickets__Tickets::get_event_attendees
-
-		// Eventually we can add support for more ticket types.
-		switch ( $this->order_type ) {
-			case 'woo':
-				$woo = wc_get_order( $this->order_id );
-				// Double check that we actually have a valid order.
-				if ( $woo ) {
-					$this->output_woo_tickets( $this->order_id );
-				}
-				break;
-
-			default:
-				break;
+		// Stop users from viewing tickets unless they're admins or purchased them.
+		if ( ! current_user_can( 'edit_others_tribe_events' ) && $holder_email !== $current_user->user_email ) {
+			return;
 		}
 
-	}
-
-	public function output_woo_tickets( $order_id ) {
-		$wootickets = Tribe__Tickets_Plus__Commerce__WooCommerce__Main::get_instance();
-
-		$args = array(
-			'post_type'      => $wootickets->attendee_object,
-			'meta_key'       => $wootickets->atendee_order_key,
-			'meta_value'     => $order_id,
-			'posts_per_page' => -1,
-		);
-
-		$query = new WP_Query( $args );
-
-		$attendees = array();
-
-		foreach ( $query->posts as $post ) {
-			$product = get_post( get_post_meta( $post->ID, $wootickets->atendee_product_key, true ) );
-			$ticket_unique_id = get_post_meta( $post->ID, '_unique_id', true );
-			$ticket_unique_id = '' === $ticket_unique_id ? $post->ID : $ticket_unique_id;
-
-			$attendees[]      = array(
-				'event_id'      => get_post_meta( $post->ID, $wootickets->atendee_event_key, true ),
-				'product_id'    => $product->ID,
-				'ticket_name'   => $product->post_title,
-				'holder_name'   => get_post_meta( $order_id, '_billing_first_name', true ) . ' ' . get_post_meta( $order_id, '_billing_last_name', true ),
-				'order_id'      => $order_id,
-				'ticket_id'     => $ticket_unique_id,
-				'qr_ticket_id'  => $post->ID,
-				'security_code' => get_post_meta( $post->ID, $wootickets->security_code, true ),
-			);
+		if ( ! empty( $attendees ) ) {
+			echo $ticket_provider->generate_tickets_email_content( $attendees );
+		} else {
+			_e( 'No attendees found for this order.', 'tribe-extension' );
 		}
 
-		echo $wootickets->generate_tickets_email_content( $attendees );
 		exit;
 	}
 
+	/**
+	 * Add ticket link to front end My Tickets page
+	 *
+	 * @see event_tickets_orders_attendee_contents
+	 */
+	public function event_tickets_orders_attendee_contents( $attendee, $post ) {
+		echo $this->get_ticket_link( $attendee['order_id'] );
+	}
+
+	/**
+	 * Adds view ticket link to backend Attendee List
+	 *
+	 * @see event_tickets_attendees_table_row_actions
+	 */
+	public function event_tickets_attendees_table_row_actions( $actions, $order_item ) {
+		return $actions[] = $this->get_ticket_link( $order_item['order_id'] );
+	}
+
+	/**
+	 * Adds View tickets link to Woo Order Actions
+	 *
+	 * @see woocommerce_order_actions
+	 */
 	public function add_woo_view_action( $actions = array() ) {
-		$actions['tribe_view_ticket'] = __( 'View Tickets', 'tribe-extension' );
+		$actions['tribe_view_ticket'] = __( 'View Ticket(s)', 'tribe-extension' );
 		return $actions;
 	}
 
+	/**
+	 * Forwards user to view tickets page on Woo's View Tickets order action
+	 *
+	 * @param $order string The ID of the Woo order
+	 */
 	public function forward_woo_action( $order ) {
+		wp_redirect( $this->get_view_ticket_url( $order ) );
+		exit;
+	}
+
+	/**
+	 * Get a link to the ticket view
+	 *
+	 * @param $order_id string
+	 *
+	 * @return string The HTML link element
+	 */
+	public function get_ticket_link( $order_id ) {
+		$url = $this->get_view_ticket_url( $order_id );
+
+		$output = sprintf(
+			'<a href="%1$s" class="tribe-view-ticket-link">%2$s</a>',
+			esc_attr( $url ),
+			esc_html__( 'View Ticket(s)', 'tribe-extenstion' )
+		);
+
+		return $output;
+	}
+
+	/**
+	 * Gets the view ticket URL
+	 *
+	 * @param $order_id string The order ID
+	 *
+	 * @return string URL
+	 */
+	public function get_view_ticket_url( $order_id ) {
 		$url = add_query_arg(
-			array(
-				$this->view_ticket_url_key => $order->id,
-				$this->view_ticket_url_key_type => 'woo',
-			),
+			array( $this->view_ticket_url_key => $order_id ),
 			trailingslashit( home_url() )
 		);
 
-		wp_redirect( $url );
-		exit;
+		return $url;
 	}
 }
