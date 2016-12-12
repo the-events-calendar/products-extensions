@@ -48,10 +48,19 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * Extension initialization and hooks.
 	 */
 	public function init() {
+		if ( version_compare( PHP_VERSION, '5.3.2', '<' ) ) {
+			_doing_it_wrong(
+				$this->get_name(),
+				'This Extension requires PHP 5.3.2 or newer to work. Please contact your website host and inquire about updating PHP.',
+				'1.0.0'
+			);
+			return;
+		}
+
 		add_action( 'wp_loaded', array( $this, 'show_ticket_page' ) );
 		add_filter( 'woocommerce_order_actions', array( $this, 'add_woo_view_action' ) );
 		add_action( 'woocommerce_order_action_tribe_view_ticket', array( $this, 'forward_woo_action' ) );
-		add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'event_tickets_orders_attendee_contents' ), 0, 2 );
+		add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'event_tickets_attendees_table_row_actions' ), 0, 2 );
 		add_action( 'event_tickets_orders_attendee_contents', array( $this, 'event_tickets_orders_attendee_contents' ), 10, 2 );
 	}
 
@@ -108,7 +117,8 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * @see event_tickets_attendees_table_row_actions
 	 */
 	public function event_tickets_attendees_table_row_actions( $actions, $order_item ) {
-		return $actions[] = $this->get_ticket_link( $order_item['order_id'] );
+		$actions[] = $this->get_ticket_link( $order_item['order_id'] );
+		return $actions;
 	}
 
 	/**
@@ -117,7 +127,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * @see woocommerce_order_actions
 	 */
 	public function add_woo_view_action( $actions = array() ) {
-		$actions['tribe_view_ticket'] = __( 'View Ticket(s)', 'tribe-extension' );
+		$actions['tribe_view_ticket'] = __( 'View Ticket', 'tribe-extension' );
 		return $actions;
 	}
 
@@ -144,7 +154,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		$output = sprintf(
 			'<a href="%1$s" class="tribe-view-ticket-link">%2$s</a>',
 			esc_attr( $url ),
-			esc_html__( 'View Ticket(s)', 'tribe-extenstion' )
+			esc_html__( 'View Ticket', 'tribe-extenstion' )
 		);
 
 		return $output;

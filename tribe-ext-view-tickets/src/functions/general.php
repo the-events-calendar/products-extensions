@@ -22,9 +22,15 @@ if ( ! function_exists( 'tribe_call_private_method' ) ) {
 	 * @param string $method   Name of the method
 	 * @param array  $args     Any args to pass to this method
 	 *
-	 * @return mixed
+	 * @return mixed|exception Returns method or exception on PHP 5.2
 	 */
 	function tribe_call_private_method( $instance, $method, $args = array() ) {
+		if ( version_compare( PHP_VERSION, '5.3.2', '<' ) ) {
+			$exception = new Exception( 'This function requires PHP 5.3.2 or newer.' );
+			_doing_it_wrong( __FUNCTION__, $exception->getMessage(), 'N/A' );
+			return $exception;
+		}
+
 		if ( ! is_array( $args ) ) {
 			$args = array( $args );
 		}
