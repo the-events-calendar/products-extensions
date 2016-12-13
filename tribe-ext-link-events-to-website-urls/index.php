@@ -55,4 +55,5 @@ class Tribe__Extension__Link_Events_to_Website_URLs extends Tribe__Extension {
 		
 		return $link;
 	}
+
 }
