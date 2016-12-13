@@ -49,6 +49,9 @@ class Tribe__Extension__Selectively_Show_HTML extends Tribe__Extension {
 		add_filter( 'tribe_events_after_html', array( $this, 'tribe_events_after_html' ) );
 	}
 
+	/**
+	 * Add settings to tribe settings page
+	 */
 	public function add_settings() {
 		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
 
@@ -66,8 +69,8 @@ class Tribe__Extension__Selectively_Show_HTML extends Tribe__Extension {
 			'show_html_before_views',
 			array(
 				'type'            => 'checkbox_list',
-				'label'           => __( 'Show HTML before on', 'tribe-extension' ),
-				'tooltip'         => __( 'Show the HTML before content on these views', 'tribe-extension' ),
+				'label'           => esc_html__( 'Show HTML before on', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Show the HTML before content on these views', 'tribe-extension' ),
 				'default'         => array_keys( $field_view_options ),
 				'validation_type' => 'options_multi',
 				'options'         => $field_view_options,
@@ -81,8 +84,8 @@ class Tribe__Extension__Selectively_Show_HTML extends Tribe__Extension {
 			'show_html_after_views',
 			array(
 				'type'            => 'checkbox_list',
-				'label'           => __( 'Show HTML after on', 'tribe-extension' ),
-				'tooltip'         => __( 'Show the HTML after content on these views', 'tribe-extension' ),
+				'label'           => esc_html__( 'Show HTML after on', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Show the HTML after content on these views', 'tribe-extension' ),
 				'default'         => array_keys( $field_view_options ),
 				'validation_type' => 'options_multi',
 				'options'         => $field_view_options,
