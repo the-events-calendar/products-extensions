@@ -143,7 +143,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		// We MUST have a valid timezone because otherwise sending an empty string of a timezone to tribe_get_start_date() or tribe_get_end_date() results in inaccurate display
 		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
 			if ( current_user_can( 'edit_posts' ) ) { // Contributor or higher
-				return __( 'Invalid timezone supplied. Please fix the "timezone" argument for this shortcode or edit this event to make sure it has timezone data. (This message is only shown to Contributors and higher level users.)', 'tribe_formatted_event_date' );
+				return __( 'Invalid timezone supplied. Please fix the "timezone" argument for this shortcode or edit this event to make sure it has timezone data. (This message is only shown to Contributors and higher level users.)', 'tribe-extension' );
 			} else {
 				return false;
 			}
