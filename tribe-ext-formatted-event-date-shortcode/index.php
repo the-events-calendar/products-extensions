@@ -1,8 +1,8 @@
 <?php
 /**
 * Plugin Name: The Events Calendar Extension: Formatted Event Date Shortcode
-* Description: Output event Start Time or End Time in <a href="http://php.net/manual/en/function.date.php" target="_blank">whatever valid date/time format you want</a>. Example: [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia T" timezone="America/New_York"] would output Event ID 1234's start date (which is 11am in America/Chicago) like this: "August 2, 2017, at 12:00pm EST"
-* Version: 1.0.0
+* Description: Output event Start Time or End Time in <a href="http://php.net/manual/function.date.php" target="_blank">whatever valid date/time format you want</a>. Example: [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia T" timezone="America/New_York"] would output Event ID 1234's start date (which is 11am in America/Chicago) like this: "August 2, 2017, at 12:00pm EDT"
+* Version: 1.0.1
 * Extension Class: Tribe__Extension__Formatted_Event_Date_Shortcode
 * Author: Modern Tribe, Inc.
 * Author URI: http://m.tri.be/1971
@@ -10,8 +10,9 @@
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-// Created 2016-09-15 for https://theeventscalendar.com/support/forums/topic/_eventstartdate-format/
-// Turned into an Extension by Cliff on 2016-12-07
+// 2016-09-15 Cliff created for https://theeventscalendar.com/support/forums/topic/_eventstartdate-format/
+// 2016-12-07 Cliff turned into an extension
+// 2016-12-20 Cliff modified to become v1.0.1 to overcome bugs in TEC Core and improve this extension's code and error messages
 
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -30,26 +31,6 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	// Define the shortcode name
 	public $shortcode_name = 'tribe_formatted_event_date';
 	
-	// Array of the possible values from the "Timezone" section of the table at http://php.net/manual/en/function.date.php
-	private $timezone_formats = array(
-		'e',
-		'I',
-		'O',
-		'P',
-		'T',
-		'Z',
-	);
-	
-	// Same as $this->timezone_formats except in regex format, e.g. for preg_match and preg_replace
-	private $timezone_formats_regex = array(
-		'/e/',
-		'/I/',
-		'/O/',
-		'/P/',
-		'/T/',
-		'/Z/',
-	);
-	
 	/**
 	 * Setup the Extension's properties.
 	 *
@@ -62,7 +43,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.0' ); // main thing we are concerned about is '_EventTimezone' meta key, but there are protections here against it not existing anyway
 		
 		// Set the extension's TEC URL
-		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );		
 	}
 	
 	/**
@@ -75,35 +56,57 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	}
 	
 	/**
-	 * Outputs various timezone formats manually
-	 * Unless we manually do this here, the "raw" timezone format would output in WordPress' timezone (i.e. static, not dynamic to the event), which is inaccurate and confusing.
+	 * Get Event Date as String for Event Start Time (or End Time)
 	 *
-	 * @access: private
-	 *
-	 * @return: string
+	 * @return: false|string
 	 */
-	private function get_timezone_format_as_esc_string( $timezone_format, $timezone ) {
-		if ( empty( $timezone_format ) || empty( $timezone ) ) {
-			return '';
+	public function get_event_date_string( $event_id, $start_end = 'start' ) {
+		if ( empty( $event_id ) ) {
+			return false;
 		}
 		
-		// based on http://stackoverflow.com/a/35474695
-		$dateTime = new DateTime();
-		$dateTime->setTimeZone( new DateTimeZone( $timezone ) ); 
-		$timezone_result = $dateTime->format( $timezone_format );
-		
-		// some of the timezone formats output a number, like: "1", "+0200", or "-43200" (without quotes)
-		if ( ! is_numeric( $timezone_result ) // I, O, Z
-			&&  false === strpos( $timezone_result, ':' ) // P
-		) {
-			$array = str_split( $timezone_result );
-			
-			$timezone_result = '\\' . implode( '\\', $array );
+		if ( 'start' === $start_end ) {
+			$type = 'Start';
+		} else {
+			$type = 'End';
 		}
 		
-		return $timezone_result;
+		if ( ! class_exists( 'Tribe__Events__Timezones' ) ) {
+			return false;
+		}
+		
+		if ( ! method_exists( 'Tribe__Events__Timezones', 'get_event_timezone_string' ) ) {
+			return false;
+		}
+
+		$event_timezone = Tribe__Events__Timezones::get_event_timezone_string( $event_id );
+		
+		if ( ! in_array( $event_timezone, timezone_identifiers_list() ) ) {
+			return false;
+		}
+		
+		$event_date = get_post_meta( $event_id, "_Event{$type}Date", true );
+		
+		if ( empty( $event_date ) ) {
+			return false;
+		}
+		
+		return sprintf( '%s %s', $event_date, $event_timezone );
 	}
 	
+	/**
+	 * Get Unix Timestamp for Event Date as String
+	 *
+	 * @return: false|int
+	 */
+	public function get_event_timestamp( $event_date_as_string ) {
+		if ( empty( $event_date_as_string ) ) {
+			return false;
+		}
+		
+		return strtotime( $event_date_as_string ); // strtotime is false for an empty string
+	}
+		
 	/**
 	 * Logic for the shortcode.
 	 * Examples:
@@ -118,9 +121,9 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	public function shortcode_output( $atts ) {
 		$defaults = array(
 			'id'		=> get_the_ID(), // Post ID of a single Event
-			'timezone'	=> '', // example: 'America/Chicago' -- see http://php.net/manual/en/timezones.php
-			'format'	=> '', // see http://php.net/manual/en/function.date.php
 			'start_end'	=> '', // valid values are 'start' (or blank) or 'end'
+			'format'	=> '', // REQUIRED -- see http://php.net/manual/function.date.php
+			'timezone'	=> '', // example: 'America/Chicago' -- see http://php.net/manual/timezones.php
 			'class'		=> '',
 		);
 		
@@ -131,73 +134,74 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		// bail if Post ID is not set or is not an Event post type
 		// https://theeventscalendar.com/function/tribe_is_event/
 		if ( empty( $id ) || ! tribe_is_event( $id ) ) {
-			return false;
-		}
-		
-		$timezone = trim( $atts['timezone'] );
-		
-		if ( empty( $timezone ) ) {
-			$timezone = get_post_meta( $id, '_EventTimezone', true ); // there is not a variable or constant in The Events Calendar for this meta key :(
-		}
-		
-		// We MUST have a valid timezone because otherwise sending an empty string of a timezone to tribe_get_start_date() or tribe_get_end_date() results in inaccurate display
-		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
 			if ( current_user_can( 'edit_posts' ) ) { // Contributor or higher
-				return __( 'Invalid timezone supplied. Please fix the "timezone" argument for this shortcode or edit this event to make sure it has timezone data. (This message is only shown to Contributors and higher level users.)', 'tribe_formatted_event_date' );
+				return __( 'The "id" argument for this shortcode is either missing, or this post does not exist, or this post is not of the proper post type. (This message is only shown to Contributors and higher level users.)', 'tribe-extension' );
 			} else {
 				return false;
 			}
 		}
 		
-		// if $format is empty, will get defaulted to the format from https://theeventscalendar.com/function/tribe_format_date/
 		$format = trim( $atts['format'] );
 		
-		// Massage the $format to allow outputting the FIRST timezone format.
-		// LIMITATION: if a letter is escaped but it is the first that matches a timezone format, we do not test for this and it will not actually get escaped as intended, if at all.
-		// If more than one timezone format is used, all but the FIRST will be fully ignored.
-		if ( ! empty( $format ) ) {
-			// get the first timezone format
-			$timezone_format = '';
-			foreach ( $this->timezone_formats as $key => $value ) {
-				if ( false !== strpos( $format, $value ) ) {
-					$timezone_format = substr( $format, strpos( $format, $value ), 1 );
-					break;
-				}
+		// bail if date format is not specified (we do not care if it is valid)
+		if ( empty( $format ) ) {
+			if ( current_user_can( 'edit_posts' ) ) { // Contributor or higher
+				return sprintf(
+					__( 'The "format" argument for this shortcode is required. Please reference %s. (This message is only shown to Contributors and higher level users.)', 'tribe-extension' ),
+					'<a target="_blank" href="http://php.net/manual/function.date.php">http://php.net/manual/function.date.php</a>'
+				);
+			} else {
+				return false;
 			}
-			
-			// Temporary placeholder to be replaced with manually-created timezone format string
-			// Make sure no character is one from http://php.net/manual/en/function.date.php
-			$timezone_temp_placeholder = '$$$$';
-			
-			// replace the first timezone format with a placeholder for later
-			$format = preg_replace( $this->timezone_formats_regex, $timezone_temp_placeholder, $format, 1 );
-			
-			// get rid of all other timezone formats
-			$format = str_replace( $this->timezone_formats, '', $format );
-			
-			// inject manual timezone format as escaped string so it will not be converted to a datetime format
-			$format = str_replace( $timezone_temp_placeholder, $this->get_timezone_format_as_esc_string( $timezone_format, $timezone ), $format );
-			
-			$format = trim( $format );
 		}
 		
-		$start_end = trim( $atts['start_end'] );
+		$start_end = trim( strtolower( $atts['start_end'] ) );
+		
 		// default to 'start'
-		if ( empty( $start_end ) ) {
+		if ( 'end' !== $start_end ) {
 			$start_end = 'start';
 		}
 		
-		if ( 'start' !== $start_end && 'end' !== $start_end ) {
-			return false; // bad entry
+		// Event's timezone could be different from user's desired timezone output
+		$event_timezone = Tribe__Events__Timezones::get_event_timezone_string( $id );
+		
+		// User-specified timezone from the shortcode argument
+		$timezone = trim( $atts['timezone'] );
+		
+		if ( empty( $timezone ) ) {
+			$timezone = $event_timezone;
 		}
 		
-		if ( 'start' === $start_end ) {
-			// https://theeventscalendar.com/function/tribe_get_start_date/
-			$event_date = tribe_get_start_date( $id, true, $format, $timezone );
-		} else { // 'end'
-			// https://theeventscalendar.com/function/tribe_get_end_date/
-			$event_date = tribe_get_end_date( $id, true, $format, $timezone );
+		// This should only display if the user tried to enter a timezone but did so incorrectly (i.e. should NOT display if timezone shortcode argument is left blank)
+		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
+			if ( current_user_can( 'edit_posts' ) ) { // Contributor or higher
+				return sprintf(
+					__( 'The "timezone" argument for this shortcode is invalid. Please reference %s. (This message is only shown to Contributors and higher level users.)', 'tribe-extension' ),
+					'<a target="_blank" href="http://php.net/manual/timezones.php">http://php.net/manual/timezones.php</a>'
+				);
+			} else {
+				return false;
+			}
 		}
+		
+		// using our own methods here due to https://central.tri.be/issues/70923 (even if fixed, it is good to keep these to support backwards compatibility)
+		$event_date_as_string = $this->get_event_date_string( $id, $start_end, $event_timezone );
+		
+		if ( empty( $event_date_as_string ) ) {
+			if ( current_user_can( 'edit_posts' ) ) { // Contributor or higher
+				return __( "There was an error with this event's date information. (This message is only shown to Contributors and higher level users.)", 'tribe-extension' );
+			} else {
+				return false;
+			}
+		}
+		
+		// get timestamp, use it in DateTime UTC, convert it to user's desired timezone and format
+		$event_timestamp = $this->get_event_timestamp( $event_date_as_string );
+		
+		$event_datetime = new DateTime( '@' . $event_timestamp, new DateTimeZone ( 'UTC' ) );
+		$event_datetime->setTimezone( new DateTimeZone( $timezone ) );
+		
+		$event_date = $event_datetime->format( $format );
 		
 		// https://developer.wordpress.org/reference/functions/sanitize_html_class/
 		$class = sanitize_html_class( $atts['class'] );
