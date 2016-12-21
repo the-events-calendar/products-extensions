@@ -105,8 +105,11 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 		// The meat of this extension is a hack, that requires certain versions of PHP.
 		// @todo Once we get a proper filter for the ticket providers we can remove the hack.
 		if ( version_compare( PHP_VERSION, '5.3.2', '<' ) ) {
-			$exception = new Exception( $this->get_name() . ' requires PHP 5.3.2 or newer.' );
-			_doing_it_wrong( __FUNCTION__, $exception->getMessage(), 'N/A' );
+			_doing_it_wrong(
+				__FUNCTION__,
+				$this->get_name() . ' requires PHP 5.3.2 or newer.',
+				'N/A'
+			);
 			return;
 		}
 
