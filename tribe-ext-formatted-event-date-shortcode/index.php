@@ -2,7 +2,7 @@
 /**
 * Plugin Name: The Events Calendar Extension: Formatted Event Date Shortcode
 * Description: Output event Start Time or End Time in <a href="http://php.net/manual/function.date.php" target="_blank">whatever valid date/time format you want</a>. Example: [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia T" timezone="America/New_York"] would output Event ID 1234's start date (which is 11am in America/Chicago) like this: "August 2, 2017, at 12:00pm EDT"
-* Version: 1.0.1
+* Version: 1.0
 * Extension Class: Tribe__Extension__Formatted_Event_Date_Shortcode
 * Author: Modern Tribe, Inc.
 * Author URI: http://m.tri.be/1971
@@ -12,7 +12,7 @@
 
 // 2016-09-15 Cliff created for https://theeventscalendar.com/support/forums/topic/_eventstartdate-format/
 // 2016-12-07 Cliff turned into an extension
-// 2016-12-20 Cliff modified to become v1.0.1 to overcome bugs in TEC Core and improve this extension's code and error messages
+// 2016-12-21 Cliff modified to overcome bugs in TEC Core and improve this extension's code and error messages (zero downloads at time of editing)
 
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
