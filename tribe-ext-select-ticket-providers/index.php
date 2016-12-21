@@ -110,12 +110,12 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 			return;
 		}
 
-		$enabled_providers = tribe_get_option( $this->option_key_enabled_providers, Tribe__Tickets__Tickets::modules() );
+		$current_providers = $this->get_default_providers();
+		$enabled_providers = tribe_get_option( $this->option_key_enabled_providers, $current_providers );
 
 		$reflection = new ReflectionClass( 'Tribe__Tickets__Tickets' );
 		$reflect_prop = $reflection->getProperty( 'active_modules' );
 		$reflect_prop->setAccessible( true );
-		$current_providers = $this->get_default_providers();
 
 		// Remove disabled providers from $current_providers
 		foreach ( $current_providers as $class => $description ) {
