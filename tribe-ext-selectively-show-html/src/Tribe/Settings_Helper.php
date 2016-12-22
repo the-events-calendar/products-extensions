@@ -5,14 +5,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
 }
 
-if ( class_exists( 'Tribe__Settings_Helper' ) ) {
+if ( class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
 	return;
 }
 
 /**
  * Helper for inserting/removing fields on the WP Admin Tribe Settings pages
  */
-class Tribe__Settings_Helper {
+class Tribe__Extension__Settings_Helper {
 
 	/**
 	 * Fields inserted into misc section
@@ -79,6 +79,22 @@ class Tribe__Settings_Helper {
 	 * @param bool   $above             (optional) Insert above or below its neighbor.
 	 */
 	public function add_fields( $fields, $setting_tab, $neighboring_field = null, $above = false ) {
+
+		foreach ( $fields as $key => $val ) {
+			// Handles button_link type that doesn't exist in Tribe__Field.
+			if ( 'button_link' === $fields[ $key ]['type'] ) {
+				$fields[ $key ]['type'] = 'html';
+				$fields[ $key ]['html'] = $this->get_button_html(
+					$key,
+					$fields[ $key ]['label'],
+					$fields[ $key ]['url'],
+					$fields[ $key ]['tooltip']
+				);
+				unset( $fields[ $key ]['label'] );
+				unset( $fields[ $key ]['tooltip'] );
+			}
+		}
+
 		if ( ! is_string( $neighboring_field ) ) {
 			// If neighbor is not specified, add this to misc section.
 			$this->insert_fields_misc = array_replace_recursive(
@@ -170,5 +186,46 @@ class Tribe__Settings_Helper {
 		return $fields;
 	}
 
-}
 
+
+	/**
+	 * Builds a button/link to add to the setting page, mimicing those in The Events Calendar
+	 *
+	 * @param string $slug    The field slug
+	 * @param string $label   The label for the button and field
+	 * @param string $url     The link element URL
+	 * @param string $tooltip Optional paragraph to appear underneath link
+	 *
+	 * @return string The button HTML
+	 */
+	protected function get_button_html( $slug, $label, $url, $tooltip = '' ) {
+		$legend = sprintf(
+			'<legend class="tribe-field-label">%s</legend>',
+			$label
+		);
+
+		if ( ! empty( $tooltip ) ) {
+			$tooltip = sprintf(
+				'<p class="tribe-field-indent description">%s</p>',
+				$tooltip
+			);
+		}
+
+		$field_wrap = sprintf(
+			'<div class="tribe-field-wrap"><a href="%1$s" class="button">%2$s</a>%3$s</div>',
+			$url,
+			$label,
+			$tooltip
+		);
+
+		$output = sprintf(
+			'<fieldset id="tribe-field-%1$s" class="tribe-field tribe-field-button_link">%2$s%3$s</fieldset><div class="clear"></div>',
+			$slug,
+			$legend,
+			$field_wrap
+		);
+
+		return $output;
+	}
+
+}

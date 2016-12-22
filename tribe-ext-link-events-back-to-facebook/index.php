@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     The Events Calendar Extension: Link Events Back to Facebook
  * Description:     An extension that makes event titles link to the events' Website URLs when present.
- * Version:         1.0.0
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension_Link_Events_Back_to_FB
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -27,8 +27,7 @@ class Tribe__Extension_Link_Events_Back_to_FB extends Tribe__Extension {
 	 *
 	 */
 	public function construct() {
-		$this->add_required_plugin( 'Tribe__Events__Main', '4.0' );
-		$this->add_required_plugin( 'Tribe__Events__Facebook__Importer' );
+		$this->add_required_plugin( 'Tribe__Events__Main' );
 		$this->set_url( 'https://theeventscalendar.com/extensions/add-the-source-link-of-an-event-imported-from-facebook/' );
 	}
 
@@ -43,14 +42,17 @@ class Tribe__Extension_Link_Events_Back_to_FB extends Tribe__Extension {
 	 * Add a link to the Facebook event at the start of event content.
 	 */
 	public function add_link_to_fb_event() {
-	  
 		$fbid = tribe_get_event_meta( get_the_ID(), '_FacebookID' );
-		
+
 		// Only proceed if this event is indeed imported from Facebook.
 		if ( empty( $fbid ) ) {
 			return;
 		}
 
-		printf( '<p><a href="http://facebook.com/events/%2%s" target="_blank" rel="nofollow">%1$s</a></p>', esc_html__( 'See this event on Facebook', 'tribe-extension' ), absint( $fbid ) );
+		printf(
+			'<p><a href="http://facebook.com/events/%2%s" target="_blank" rel="nofollow">%1$s</a></p>',
+			esc_html__( 'See this event on Facebook', 'tribe-extension' ),
+			$fbid
+		);
 	}
 }
