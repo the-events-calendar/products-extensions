@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
 }
 
-if ( class_exists( 'Tribe__Settings_Helper' ) ) {
+if ( class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
 	return;
 }
 

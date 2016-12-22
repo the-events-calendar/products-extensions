@@ -66,7 +66,7 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
 
 		// Setup fields on the settings page
-		$setting_helper = new Tribe__Settings_Helper();
+		$setting_helper = new Tribe__Extension__Settings_Helper();
 		$providers = $this->get_default_providers();
 
 		$setting_helper->add_field(
@@ -102,14 +102,10 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 	 * Removes ticket providers specified in the options
 	 */
 	public function remove_providers() {
-		// The meat of this extension is a hack, that requires certain versions of PHP.
+		// The meat of this extension is a hack, that requires PHP 5.3+.
 		// @todo Once we get a proper filter for the ticket providers we can remove the hack.
-		if ( version_compare( PHP_VERSION, '5.3.2', '<' ) ) {
-			_doing_it_wrong(
-				__FUNCTION__,
-				$this->get_name() . ' requires PHP 5.3.2 or newer.',
-				'N/A'
-			);
+		if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
+			_doing_it_wrong( $this->get_name(), 'Requires PHP 5.3 or newer.', 'N/A' );
 			return;
 		}
 
@@ -120,7 +116,7 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 		$reflect_prop = $reflection->getProperty( 'active_modules' );
 		$reflect_prop->setAccessible( true );
 
-		// Remove disabled providers from $current_providers
+		// Remove disabled providers from $current_providers.
 		foreach ( $current_providers as $class => $description ) {
 			if ( ! in_array( $class, $enabled_providers ) ) {
 				unset( $current_providers[ $class ] );
