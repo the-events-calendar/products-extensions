@@ -93,7 +93,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 		
 		register_sidebar (
 			array (
-				'name'			=> __( 'TEC Above Calendar AND Single Events', 'tribe-extension' ),
+				'name'			=> __( 'TEC Above Single Events', 'tribe-extension' ),
 				'id'			=> 'tec_ext_cal_widget_areas_single__before_view',
 				'description'	=> __( 'Widgets in this area will be shown ABOVE Event Single pages.', 'tribe-extension' ),
 			)
@@ -101,7 +101,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 		
 		register_sidebar (
 			array (
-				'name'			=> __( 'TEC Below Calendar AND Single Events', 'tribe-extension' ),
+				'name'			=> __( 'TEC Below Single Events', 'tribe-extension' ),
 				'id'			=> 'tec_ext_cal_widget_areas_single__after_view',
 				'description'	=> __( 'Widgets in this area will be shown BELOW Event Single pages.', 'tribe-extension' ),
 			)
@@ -136,6 +136,10 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * @access: public
 	 */
 	public function before_view() {
+		if ( ! tribe_is_event() ) {
+			return false;
+		}
+		
 		dynamic_sidebar( 'tec_ext_cal_widget_areas_single__before_view' );
 	}
 	
@@ -146,6 +150,10 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * @access: public
 	 */
 	public function after_view() {
+		if ( ! tribe_is_event() ) {
+			return false;
+		}
+		
 		dynamic_sidebar( 'tec_ext_cal_widget_areas_single__after_view' );
 	}
 	
