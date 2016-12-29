@@ -90,7 +90,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			),
 		);
 		
-		return $areas;
+		return apply_filters( 'tribe_ext_calendar_widget_areas', $areas );
 	}
 	
 	/**
