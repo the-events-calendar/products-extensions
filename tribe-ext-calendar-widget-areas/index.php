@@ -1,7 +1,7 @@
 <?php
 /**
 * Plugin Name: The Events Calendar Extension: Calendar Widget Areas
-* Description: Adds widget areas (a.k.a. sidebars) that only display on The Events Calendar pages/views
+* Description: Adds widget areas (a.k.a. sidebars) that only display on The Events Calendar pages/views. Areas may be enabled or disabled in the Display tab of Events Settings.
 * Version: 1.0
 * Extension Class: Tribe__Extension__Calendar_Widget_Areas
 * Author: Modern Tribe, Inc.
