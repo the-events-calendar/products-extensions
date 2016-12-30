@@ -44,6 +44,11 @@ class Tribe__Extension__Hide_Linked_Posts extends Tribe__Extension {
 		add_filter( 'tribe_events_linked_posts_query', array( $this, 'hide_linked_posts' ), 10, 2 );
 	}
 
+	/**
+	 * Filters tribe_events_linked_posts_query, returning nothing unless the query is for a specific author
+	 *
+	 * @see tribe_events_linked_posts_query
+	 */
 	public function hide_linked_posts( $output, $args ) {
 
 		if ( ! is_admin() && ! isset( $args['author'] ) ) {
