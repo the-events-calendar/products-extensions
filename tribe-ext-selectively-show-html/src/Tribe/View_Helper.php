@@ -5,11 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
 }
 
-if ( ! class_exists( 'Tribe__View_Helper' ) ) {
+if ( class_exists( 'Tribe__Extension__View_Helper' ) ) {
 	return;
 }
 /**
- * Class Tribe__View_Helper
+ * Class Tribe__Extension__View_Helper
  *
  * @todo This class is old, it will be massively redone with the new view architecture in 4.5 then integrated into Core. Until then it works.
  *
@@ -19,7 +19,7 @@ if ( ! class_exists( 'Tribe__View_Helper' ) ) {
  * - Determining which view is currently displaying
  */
 
-class Tribe__View_Helper {
+class Tribe__Extension__View_Helper {
 
 	/**
 	 * A list of views this class can help with, each item can contain:

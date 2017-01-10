@@ -18,6 +18,7 @@ Tribe Extensions are small plugins that add features to official Tribe plugins. 
  * [Standards](#standards)
  * [Updating an Extension](#updating-an-extension)
  * [Separate File for the Extension Class](#separate-file-for-the-extension-class)
+ * [TheEventsCalendar.com Extension Library](#theeventscalendarcom-extension-library)
 
 # Framework Features
 
@@ -415,3 +416,29 @@ The `index.php` inside your extension folder should always be present and contai
 ```
 
 With that line in place the Extension Framework will load the specified file before instantiating the Extension Class.
+
+## TheEventsCalendar.com Extension Library
+
+Every Extension in this repository has an official download page on [TheEventsCalendar.com: Extension Library](theeventscalendar.com/extensions/). There you will find packaged versions of each extension along with a guide for using it.
+
+### How to add an extension to the library
+
+Start by creating a [pull request](https://help.github.com/articles/about-pull-requests/) for the extension. 
+
+1. The Extension should be a new folder inside of this repo.
+ 1. The easiest way to do this is to download the entire repository to `/wp-content/plugins/`. This will give you a working copy of each current extension, and you can activate any of them in WordPress.
+ 2. Create a new branch in Git and switch to it. Typically the new branch is named after your new extension's folder, so the branch name might be `tribe-ext-example`.
+ 3. Your extension is likely already inside of the  `/wp-content/plugins/` directory, and of course will be prefixed with `tribe-ext-` just like all of the other ones you just downloaded. Add the files inside your new 'tribe-ext-' folder to git.
+ 4. Follow Github's instructions for creating a [pull request](https://help.github.com/articles/about-pull-requests/).
+2. Tag the new Pull Request with "Code Review", this will signal to the Tribe team that your extension is ready to be code reviewed.
+3. Once a developer of Tribe has code reviewed your extension it is possible they will give you some feedback, request small changes, or ask you questions. We will happily work with you to ensure this extension meets all of the relevant standards. Once you have committed and pushed any changes requested during the review, the developer will then merge the code into the repository and delete the branch.
+
+At this point a Modern Tribe representative will handle the rest of the work. This will involve creating a new ticket in our Central ticket tracker, packaging the extension into a zip, testing it out and and adding it to TheEventsCalendar.com. 
+
+### Required Standards
+
+All extensions in this repo must adhere to these standards.
+
+* Use the 'tribe-extension' text domain for WordPress' translation functions.
+* As a rule of thumb, extension methods that are attached to a filter are named after the filter they are attached to. If your extension has a method attached to `pre_get_posts` usually it makes sense to call the method `pre_get_posts()`. This makes the extensions easier to integrate if its code is ever included in an official Modern Tribe plugin. 
+* Use the GPLv2 or later license. It is possible that some or all code for any extension in this repository will later get included in an official Modern Tribe plugin. Extensions in this repo are written with this possibility in mind, and licensed appropriately.
