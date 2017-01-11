@@ -1,7 +1,7 @@
 <?php
 /**
 * Plugin Name: The Events Calendar Extension: Calendar Widget Areas
-* Description: Adds widget areas (a.k.a. sidebars) that only display on The Events Calendar pages/views. Areas may be enabled or disabled in the Display tab of Events Settings.
+* Description: Adds widget areas (a.k.a. sidebars) that only display on The Events Calendar pages/views. Areas may be enabled or disabled at wp-admin > Events > Settings > Display tab > Advanced Template Settings section. Note that the WP Customizer only allows you to manage widget areas that apply to the page you're currently previewing; therefore, you will need to navigate to your Events page, for example, to edit the content of those widget areas via the Customizer's live preview.
 * Version: 1.0
 * Extension Class: Tribe__Extension__Calendar_Widget_Areas
 * Author: Modern Tribe, Inc.
@@ -11,7 +11,7 @@
 */
 
 // Created 2015-10-05 for https://theeventscalendar.com/support/forums/topic/control-visibility-of-sidebar-widgets/#dl_post-1011743
-// Turned into an Extension by Cliff on 2016-12-23
+// Turned into an Extension by Cliff on 2017-01-11
 
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,11 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Do not load unless Tribe Common is fully loaded.
 if ( ! class_exists( 'Tribe__Extension' ) ) {
-	return;
-}
-
-// Do not load unless dynamic_sidebar exists -- since WP 2.2.0, per https://developer.wordpress.org/reference/functions/dynamic_sidebar/
-if ( ! function_exists( 'dynamic_sidebar' ) ) {
 	return;
 }
 
@@ -43,10 +38,10 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
-	 * 
-	 * @access: public
+	 *
+	 * @access protected
 	 */
-	public function construct() {
+	protected function construct() {
 		// Each plugin required by this extension
 		$this->add_required_plugin( 'Tribe__Events__Main' );
 				
@@ -61,12 +56,14 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * to use. You will also need to add an additional method toward the end of this
 	 * file for each area added so we know what code to execute.
 	 * 
-	 * @access: public
-	 * @return: array
+	 * @return array
 	 */
 	public function get_all_areas() {
 		// format is:
 		// action_hook => array of details what to do if we use this hook
+		// 'method' value may lead with context, such as "single_" and the actual function named accordingly and having the necessary logic in place
+		// actual function names are "tec_ext_widget_areas__" + the 'method' name from here
+		// optional 'hook_type' => 'action' or 'filter' to tell init() add_action or add_filter -- will default to add_action
 		$areas = array(
 			'tribe_events_before_template'	=>	array(
 				'method'  	=> 'before_template',
@@ -79,13 +76,13 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 				'desc'		=> __( 'Widgets in this area will be shown BELOW The Events Calendar.', 'tribe-extension' ),
 			),				
 			'tribe_events_before_view'	=>	array(
-				'method'  	=> 'before_view',
+				'method'  	=> 'single_before_view',
 				'name'		=> __( 'TEC Above Single Events', 'tribe-extension' ),
 				'desc'		=> __( 'Widgets in this area will be shown ABOVE Single Events.', 'tribe-extension' ),
 			),				
 			'tribe_events_after_view'	=>	array(
-				'method'  	=> 'after_view',
-				'name'		=> __( 'TEC Above Single Events', 'tribe-extension' ),
+				'method'  	=> 'single_after_view',
+				'name'		=> __( 'TEC Below Single Events', 'tribe-extension' ),
 				'desc'		=> __( 'Widgets in this area will be shown BELOW Single Events.', 'tribe-extension' ),
 			),
 		);
@@ -96,8 +93,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	/**
 	 * Build options to present to user
 	 * 
-	 * @access: public
-	 * @return: array
+	 * @return array
 	 */
 	public function get_available_area_options() {
 		$options = array();
@@ -110,21 +106,18 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	}
 	
 	/**
-	 * The chosen widget areas to activate/run.
+	 * The chosen widget areas to activate/run. Just the array keys from get_all_areas()
 	 * 
-	 * @access: public
-	 * @return: array
+	 * @return array
 	 */
 	public function get_enabled_areas_simple() {
 		$all_available = $this->get_all_areas();
 		
-		$enabled_areas = tribe_get_option( $this->option_key_enabled_areas, $all_available );
+		$enabled_areas = (array) tribe_get_option( $this->option_key_enabled_areas, $all_available );
 		
-		if ( is_array( $enabled_areas ) ) {
-			foreach ( $enabled_areas as $key => $value ) {
-				if ( ! array_key_exists( $value, $all_available ) ) {
-					unset( $enabled_areas[$key] );
-				}
+		foreach ( $enabled_areas as $key => $value ) {
+			if ( ! array_key_exists( $value, $all_available ) ) {
+				unset( $enabled_areas[$key] );
 			}
 		}
 		
@@ -132,10 +125,9 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	}
 		
 	/**
-	 * The chosen widget areas to activate/run.
+	 * The chosen widget areas to activate/run. Full array data from get_all_areas()
 	 * 
-	 * @access: public
-	 * @return: array
+	 * @return array
 	 */
 	public function get_enabled_areas_full_details() {
 		$all_available = $this->get_all_areas();
@@ -144,17 +136,15 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 		
 		$return = array();
 		
-		if ( is_array( $enabled_areas ) ) {
+		// if none selected, return all available
+		if ( empty( $enabled_areas ) ) {
+			$return = $all_available;
+		} else {
 			foreach ( $enabled_areas as $key => $value ) {
 				if ( array_key_exists( $value, $all_available ) ) {
 					$return[$value] = $all_available[$value];
 				}
 			}
-		}
-		
-		// if none selected, return all available
-		if ( empty( $enabled_areas ) || ! is_array( $enabled_areas ) ) {
-			$return = $all_available;
 		}
 		
 		return $return;
@@ -163,7 +153,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	/**
 	 * Add options to Tribe settings page
 	 *
-	 * @access: public
+	 * @see Tribe__Extension__Settings_Helper
 	 */
 	public function add_settings() {
 		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
@@ -177,7 +167,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			array(
 				'type'            => 'checkbox_list',
 				'label'           => esc_html__( 'Widget Areas', 'tribe-extension' ),
-				'tooltip'         => esc_html__( 'Select which widget areas you want available on your site.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Select which widget areas you want available on your site. Note: Unchecking all the boxes will not save. If you want all areas unchecked, just deactivate this extension.', 'tribe-extension' ),
 				'default'         => array_keys( $options ),
 				'validation_type' => 'options_multi',
 				'options'         => $options,
@@ -190,8 +180,6 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	
 	/**
 	 * Extension initialization and hooks.
-	 * 
-	 * @access: public
 	 */
 	public function init() {
 		// Register all widget areas
@@ -205,15 +193,18 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			$method = '';
 			$method = $value['method'];
 			if ( method_exists( $this, $method ) ) {
-				add_action( $key, array( $this, $method ) );
+				// add_filter or add_action
+				if ( ! empty( $value['hook_type'] ) && 'filter' === $value['hook_type'] ) {
+					add_filter( $key, array( $this, $method ) );
+				} else {
+					add_action( $key, array( $this, $method ) );
+				}
 			}
 		}
 	}
 	
 	/**
 	 * Register all widget areas.
-	 * 
-	 * @access: public
 	 */
 	public function register_sidebars() {
 		$active_areas = $this->get_enabled_areas_full_details();
@@ -222,7 +213,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			register_sidebar (
 				array (
 					'name'			=> $value['name'],
-					'id'			=> "tec_ext_cal_widget_areas__{$value['method']}",
+					'id'			=> "tec_ext_widget_areas__{$value['method']}",
 					'description'	=> $value['desc'],
 				)
 			);
@@ -232,49 +223,41 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	
 	/**
 	 * "Before Calendar" Widget Area
-	 * 
-	 * @access: public
 	 */
 	public function before_template() {
-		dynamic_sidebar( 'tec_ext_cal_widget_areas__before_template' );
+		dynamic_sidebar( 'tec_ext_widget_areas__before_template' );
 	}
 	
 	
 	/**
 	 * "After Calendar" Widget Area
-	 * 
-	 * @access: public
 	 */
 	public function after_template() {
-		dynamic_sidebar( 'tec_ext_cal_widget_areas__after_template' );
+		dynamic_sidebar( 'tec_ext_widget_areas__after_template' );
 	}
 	
 	
 	/**
 	 * "Before Event Single" Widget Area
-	 * 
-	 * @access: public
 	 */
-	public function before_view() {
+	public function single_before_view() {
 		if ( ! tribe_is_event() ) {
 			return false;
 		}
 		
-		dynamic_sidebar( 'tec_ext_cal_widget_areas_single__before_view' );
+		dynamic_sidebar( 'tec_ext_widget_areas__single_before_view' );
 	}
 	
 	
 	/**
 	 * "After Event Single" Widget Area
-	 * 
-	 * @access: public
 	 */
-	public function after_view() {
+	public function single_after_view() {
 		if ( ! tribe_is_event() ) {
 			return false;
 		}
 		
-		dynamic_sidebar( 'tec_ext_cal_widget_areas_single__after_view' );
+		dynamic_sidebar( 'tec_ext_widget_areas__single_after_view' );
 	}
 	
 }
