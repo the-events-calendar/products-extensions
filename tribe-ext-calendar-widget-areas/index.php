@@ -52,18 +52,24 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	/**
 	 * All available widget areas this extension supports and details about each in a multidimensional associative array.
 	 *
-	 * Follow this format to enable a new widget area for each action hook you want
-	 * to use. You will also need to add an additional method toward the end of this
-	 * file for each area added so we know what code to execute.
+	 * Follow this format to enable a new widget area for each action or filter hook
+	 * you want to use. You will also need to add an additional method toward the 
+	 * end of this file for each area added so we know what code to execute.
 	 * 
-	 * @return array
+	 * @return array {
+	 *     Every widget area supported by this extension
+	 * 
+	 *     @param array $hook {
+	 *         The details for each widget area
+	 * 
+	 *         @param string $method	The method of this class that outputs the widget. This value may prefix with context, such as "single_", and the actual function named accordingly and having the necessary logic in place. The actual function names are "tec_ext_widget_areas__" + the 'method' name from here.
+	 *         @param string $name		Name of the widget in the admin screens
+	 *         @param string $desc		Widget description
+	 *         @param string $filter	If $hook is a 'filter' hook instead of an action hook, set this to (bool) true.
+	 *     }
+	 * }
 	 */
 	public function get_all_areas() {
-		// format is:
-		// action_hook => array of details what to do if we use this hook
-		// 'method' value may lead with context, such as "single_" and the actual function named accordingly and having the necessary logic in place
-		// actual function names are "tec_ext_widget_areas__" + the 'method' name from here
-		// optional 'hook_type' => 'action' or 'filter' to tell init() add_action or add_filter -- will default to add_action
 		$areas = array(
 			'tribe_events_before_template'	=>	array(
 				'method'  	=> 'before_template',
@@ -194,7 +200,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			$method = $value['method'];
 			if ( method_exists( $this, $method ) ) {
 				// add_filter or add_action
-				if ( ! empty( $value['hook_type'] ) && 'filter' === $value['hook_type'] ) {
+				if ( ! empty( $value['filter'] ) && true === $value['filter'] ) {
 					add_filter( $key, array( $this, $method ) );
 				} else {
 					add_action( $key, array( $this, $method ) );
@@ -241,7 +247,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * "Before Event Single" Widget Area
 	 */
 	public function single_before_view() {
-		if ( ! tribe_is_event() ) {
+		if ( ! is_singular( Tribe__Events__Main::POSTTYPE ) ) {
 			return false;
 		}
 		
@@ -253,7 +259,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * "After Event Single" Widget Area
 	 */
 	public function single_after_view() {
-		if ( ! tribe_is_event() ) {
+		if ( ! is_singular( Tribe__Events__Main::POSTTYPE ) ) {
 			return false;
 		}
 		
