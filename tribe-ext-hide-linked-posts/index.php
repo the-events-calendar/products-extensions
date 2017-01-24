@@ -41,7 +41,9 @@ class Tribe__Extension__Hide_Linked_Posts extends Tribe__Extension {
 	 * Extension initialization and hooks.
 	 */
 	public function init() {
-		add_filter( 'tribe_events_linked_posts_query', array( $this, 'hide_linked_posts' ), 10, 2 );
+		if ( ! is_admin() ) {
+			add_filter( 'tribe_events_linked_posts_query', array( $this, 'hide_linked_posts' ), 10, 2 );
+		}
 	}
 
 	/**
@@ -50,8 +52,7 @@ class Tribe__Extension__Hide_Linked_Posts extends Tribe__Extension {
 	 * @see tribe_events_linked_posts_query
 	 */
 	public function hide_linked_posts( $output, $args ) {
-
-		if ( ! is_admin() && ! isset( $args['author'] ) ) {
+		if ( ! isset( $args['author'] ) ) {
 			$output = array();
 		}
 
