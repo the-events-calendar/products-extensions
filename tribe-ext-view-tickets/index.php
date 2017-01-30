@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     Event Tickets Plus Extension: Show and Print Tickets
  * Description:     Adds option for viewing and printing tickets. In the admin area hover over an item in the Attendee List and click "View Tickets". Or, a ticket holder can view them from the frontend in their list of tickets for an event.
- * Version:         1.0.1
+ * Version:         1.0.0
  * Extension Class: Tribe__Extension__View_Print_Tickets
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -42,7 +42,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/show-print-tickets/' );
-		$this->set_version( '1.0.1' );
 	}
 
 	/**
@@ -138,7 +137,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * @param $order string The ID of the Woo order
 	 */
 	public function forward_woo_action( $order ) {
-		wp_redirect( $this->get_view_ticket_url( $order->id ) );
+		wp_redirect( $this->get_view_ticket_url( $order ) );
 		exit;
 	}
 
