@@ -1,0 +1,23 @@
+.woocommerce table a.event-title {
+	font-size: 1.25em;
+	font-style: italic;
+}
+.woocommerce table div.tribe-event-details {
+	font-size: .75em;
+	margin: 0 0 .75em;
+}
+.woocommerce table div.tribe-attendee-meta-heading {
+	 margin: 0;
+}
+.woocommerce table table.tribe-attendee-meta {
+	margin: .5em 0;
+	border-width: 0;
+	border-collapse: collapse;
+}
+.woocommerce table table.tribe-attendee-meta td {
+	font-size: .75em;
+	padding: 0 0 .25em;
+	border: 0 none;
+	width: auto;
+	vertical-align: top;
+}
