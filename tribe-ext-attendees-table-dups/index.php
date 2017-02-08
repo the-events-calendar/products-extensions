@@ -48,17 +48,18 @@ class Tribe__Extension__Attendees_Table_Duplicates extends Tribe__Extension {
 	
 	/**
 	 * Logic for the output
+	 *
+	 * @return string
 	 */
 	public function output() {
 		wp_enqueue_script( 'jquery' );
 		?>
-		<script>
-		jQuery( function( $ ) {
-			let hide_dups_button = "<button type='button' class='hide_dup_orders button action' style='float: left; margin: 1px 8px 0 0; background-color: #b4ffbe;'><span class='dup_show_hide' style='display: none;'><?php esc_html_e( 'Show', 'tribe-extension' ); ?></span><span class='dup_show_hide'><?php esc_html_e( 'Hide', 'tribe-extension' ); ?></span> Dupl. Orders</button>";
+		<script type="text/javascript" id="tribe-extension-attendees-table-duplicates">
+		jQuery( document ).ready( function( $ ) {
+			const first_color = "#ffe2e7"; // green
+			const dups_color = "#b4ffbe"; // pink
 			
-			$( hide_dups_button ).insertAfter( "div.tablenav div.attendees-actions a:last-child" );
-			
-			let orders = $( "table.attendees tbody#the-list tr td > div.row-actions a[href*='tribe_view_ticket_order']" );
+			const orders = $( "table.attendees tbody#the-list tr td > div.row-actions a[href*='tribe_view_ticket_order']" );
 			
 			$( orders ).each( function() {
 				let order_id = $( this ).attr( 'href' ).match( /\d+$/ )[0]; // get the numbers from the end of the href
@@ -68,7 +69,7 @@ class Tribe__Extension__Attendees_Table_Duplicates extends Tribe__Extension {
 				order_id_class = '';
 			});
 			
-			let orders_rows = $( "table.attendees tbody#the-list tr[class*='order_id']" );
+			const orders_rows = $( "table.attendees tbody#the-list tr[class*='order_id']" );
 			
 			let order_id_classes = [];
 			
@@ -86,50 +87,71 @@ class Tribe__Extension__Attendees_Table_Duplicates extends Tribe__Extension {
 				return ( value.match( "^order_id-" ) );
 			});
 			
-			// only keep non-unique order_id- classes in the array
+			// from order_id_classes, create an object of all classes and its count and create an array of the order ID classes that appear more than once
+			// adapted from http://stackoverflow.com/a/24968449/893907
+			const count = order_id_classes => 
+				order_id_classes.reduce( ( a, b ) => 
+					Object.assign( a, { [b]: ( a[b] || 0 ) + 1 } ), {} );
 			
+			const duplicates = dict => 
+				Object.keys( dict ).filter( ( a ) => dict[a] > 1 );
 			
-			// remove duplicates from array
-			let unique_order_id_classes = Array.from( new Set( order_id_classes ) ); // remove duplicates, thanks to https://www.codementor.io/tips/8243973127/how-to-remove-duplicates-within-a-javascript-array-using-es6-in-just-one-line
+			// const order_ids_and_counts = count( order_id_classes ); // object
 			
-			// color the duplicates
-			$( unique_order_id_classes ).each( function( index, value ) {
-				let total_count = $( "tr." + this ).length;
-				$( "tr." + this ).not( ":last" ).css({ "background-color": "#ffe2e7" });
-				
-				if ( 1 < total_count ) {
-					$( "tr." + this + ":last td.status" ).prepend( "<span class='total_of_same' style='font-weight: bold; display: block;'><?php esc_html_e( 'Total', 'tribe-extension' ); ?>: " + total_count + "</span>" );
-					$( "tr." + this + ":last" ).css({ "background-color": "#b4ffbe" });
-				}
-				
-			});
+			const dup_order_ids = duplicates( count( order_id_classes ) ); // array will exist and be an empty if no dups
 			
-			let collapsed = false;
+			const dups_button_text = "<span class='dup_show_hide' style='display: none;'><?php esc_html_e( 'Show', 'tribe-extension' ); ?></span><span class='dup_show_hide'><?php esc_html_e( 'Hide', 'tribe-extension' ); ?></span> <span class='dups_count'>" + dup_order_ids.length + "</span> Dupl. Orders";
 			
-			$( ".hide_dup_orders" ).click( function() {
+			const hide_dups_button = "<button type='button' class='hide_dup_orders button action' style='float: left; margin: 1px 8px 0 0;'>" + dups_button_text + "</button>";
+		
+			$( hide_dups_button ).insertAfter( "div.tablenav div.attendees-actions a:last-child" );
+			
+			// do stuff if we actually have duplicates
+			if ( 0 < dup_order_ids.length ) {
 				
-				if ( false === collapsed ) {
-					collapsed = true;
-				} else {
-					collapsed = false;
-				}
-				
-				$( "span.dup_show_hide" ).toggle(); // exchange "Show" and "Hide" text in the action button
-				
-				$( unique_order_id_classes ).each( function( index, value ) {
-					// oldest/first generated ticket is last in the list
-					$( "tr." + this ).not( ":last" ).fadeToggle();
+				// color the duplicates and display number of duplicates per order in the Status column
+				$( dup_order_ids ).each( function( index, value ) {
+					let total_count = $( "tr." + this ).length;
+					$( "tr." + this ).not( ":last" ).css({ "background-color": first_color });
 					
-					if ( true === collapsed ) {
-						$( "table.striped" ).removeClass( "striped" );
-						$( ".hide_dup_orders" ).css({ "background-color": "#ffe2e7" });
-					} else {
-						$( "table" ).addClass( "striped" );
-						$( ".hide_dup_orders" ).css({ "background-color": "#b4ffbe" });
+					if ( 1 < total_count ) {
+						$( "tr." + this + ":last td.status" ).prepend( "<span class='total_of_same' style='font-weight: bold; display: block;'><?php esc_html_e( 'Total', 'tribe-extension' ); ?>: " + total_count + "</span>" );
+						$( "tr." + this + ":last" ).css({ "background-color": dups_color });
 					}
+					
 				});
-			});
-		} );
+				
+				let collapsed = false;
+				$( ".hide_dup_orders" ).css({ "background-color": dups_color });
+				
+				// click handler
+				$( ".hide_dup_orders" ).click( function() {
+					
+					if ( false === collapsed ) {
+						collapsed = true;
+					} else {
+						collapsed = false;
+					}
+					
+					$( "span.dup_show_hide" ).toggle(); // exchange "Show" and "Hide" text in the action button
+					
+					$( dup_order_ids ).each( function( index, value ) {
+						// oldest/first generated ticket is last in the list
+						$( "tr." + this ).not( ":last" ).fadeToggle();
+						
+						if ( true === collapsed ) {
+							$( "table.striped" ).removeClass( "striped" ); // alternating gray-and-white row colors is no longer accruate since some rows were removed
+							$( ".hide_dup_orders" ).css({ "background-color": first_color });
+						} else {
+							$( "table" ).addClass( "striped" );
+							$( ".hide_dup_orders" ).css({ "background-color": dups_color });
+						}
+					});
+				});
+			} else {
+				$( ".hide_dup_orders" ).attr( "disabled", "disabled" ).text( "<?php esc_html_e( 'Zero Dupl. Orders', 'tribe-extension' ); ?>" );
+			}
+		});
 		</script>
 	<?php
 	}
