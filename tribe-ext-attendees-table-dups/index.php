@@ -94,8 +94,6 @@ class Tribe__Extension__Attendees_Table_Duplicates extends Tribe__Extension {
 			const duplicates = dict => 
 				Object.keys( dict ).filter( ( a ) => dict[a] > 1 );
 			
-			// const order_ids_and_counts = count( order_id_classes ); // object
-			
 			const dup_order_ids = duplicates( count( order_id_classes ) ); // array will exist and be an empty if no dups
 			
 			const dups_button_text = "<span class='dup_show_hide' style='display: none;'><?php esc_html_e( 'Show', 'tribe-extension' ); ?></span><span class='dup_show_hide'><?php esc_html_e( 'Hide', 'tribe-extension' ); ?></span> <span class='dups_count'>" + dup_order_ids.length + "</span> Dupl. Orders";
