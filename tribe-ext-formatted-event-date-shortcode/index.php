@@ -2,7 +2,7 @@
 /**
 * Plugin Name: The Events Calendar Extension: Formatted Event Date Shortcode
 * Description: Output event Start Time or End Time in <a href="http://php.net/manual/function.date.php" target="_blank">whatever valid date/time format you want</a>. Example: [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia T" timezone="America/New_York"] would output Event ID 1234's start date (which is 11am in America/Chicago) like this: "August 2, 2017, at 12:00pm EDT"
-* Version: 1.0
+* Version: 1.1
 * Extension Class: Tribe__Extension__Formatted_Event_Date_Shortcode
 * Author: Modern Tribe, Inc.
 * Author URI: http://m.tri.be/1971
@@ -13,6 +13,7 @@
 // 2016-09-15 Cliff created for https://theeventscalendar.com/support/forums/topic/_eventstartdate-format/
 // 2016-12-07 Cliff turned into an extension
 // 2016-12-21 Cliff modified to overcome bugs in TEC Core and improve this extension's code and error messages (zero downloads at time of editing)
+// 2017-02-08 version 1.1 to make output translatable (e.g. month names), add event ID and timestamp data attributes, and enable using PHP date format constants
 
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -31,12 +32,13 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	// Define the shortcode name
 	public $shortcode_name = 'tribe_formatted_event_date';
 	
+	// Define the timezone to display in the output, if any
+	private $timezone_for_display = '';
+	
 	/**
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
-	 * 
-	 * @access: public
 	 */
 	public function construct() {
 		// Each plugin required by this extension
@@ -48,8 +50,6 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	
 	/**
 	 * Extension initialization and hooks.
-	 * 
-	 * @access: public
 	 */
 	public function init() {
 		add_shortcode( $this->shortcode_name, array( $this, 'shortcode_output' ) );
@@ -58,7 +58,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	/**
 	 * Get Event Date as String for Event Start Time (or End Time)
 	 *
-	 * @return: false|string
+	 * @return false|string
 	 */
 	public function get_event_date_string( $event_id, $start_end = 'start' ) {
 		if ( empty( $event_id ) ) {
@@ -97,7 +97,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	/**
 	 * Get Unix Timestamp for Event Date as String
 	 *
-	 * @return: false|int
+	 * @return false|int
 	 */
 	public function get_event_timestamp( $event_date_as_string ) {
 		if ( empty( $event_date_as_string ) ) {
@@ -106,15 +106,120 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		
 		return strtotime( $event_date_as_string ); // strtotime is false for an empty string
 	}
+	
+	/**
+	 * Get Unix Timestamp for Event Date as String
+	 *
+	 * @since 1.1
+	 * @access private
+	 *
+	 * @link https://secure.php.net/manual/class.datetime.php#datetime.constants.types
+	 *
+	 * @return bool
+	 */
+	private function php_datetime_format_constants( $format ) {
+		if ( empty( $format ) ) {
+			return false;
+		}
 		
+		$datetime_format_constants = array(
+			'DATE_ATOM',
+			'DATE_COOKIE',
+			'DATE_ISO8601', // Note: This format is not compatible with ISO-8601, but is left this way for backward compatibility reasons. Use DATE_ATOM for compatibility with ISO-8601 instead.
+			'DATE_RFC822',
+			'DATE_RFC850',
+			'DATE_RFC1036',
+			'DATE_RFC1123',
+			'DATE_RFC2822',
+			'DATE_RFC3339', // Same as DATE_ATOM (since PHP 5.1.3) 
+			'DATE_RSS',
+			'DATE_W3C',
+		);
+		
+		if ( in_array( $format, $datetime_format_constants ) ) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Filter timezone_string option and run date_i18n(), then remove the filter on timezone_string option
+	 *
+	 * We do things this way in order to allow the shortcode's date format argument to properly display
+	 * when the event's timezone or the shortcode's timezone is not the same as the WordPress
+	 * timezone option... while still enabling translation of things like month name according
+	 * to WordPress' locale/language setting. Note, however, that date_i18n()'s locale/translation
+	 * juggling does not translate timezone text (e.g. "EST" or "America/New_York").
+	 *
+	 * @since 1.1
+	 * @access private
+	 *
+	 * @link https://developer.wordpress.org/reference/functions/get_option/
+	 * @link https://developer.wordpress.org/reference/functions/date_i18n/
+	 *
+	 * @return bool|string
+	 */
+	private function date_i18n_custom_timezone( $format, $timestamp, $timezone = '' ) {
+		if ( empty( $format ) || empty( $timestamp ) ) {
+			return false;
+		}
+		
+		// only allow valid timezones
+		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
+			$timezone = '';
+		}
+		
+		// set timezone so that date_i18n() works correctly
+		$orig_timezone = date_default_timezone_get();
+		
+		if ( ! empty( $timezone ) ) {
+			date_default_timezone_set( $timezone );
+		}
+		
+		// if no specific timezone, use WP's default from date_i18n(), else use the passed timezone but still run through date_i18n() to get the translation benefits
+		if ( empty( $timezone ) ) {
+			$result = date_i18n( $format, $timestamp );
+		} else {
+			add_filter( 'option_timezone_string', array( $this, 'use_this_timezone' ) );
+			$result = date_i18n( $format, $timestamp );
+			remove_filter( 'option_timezone_string', array( $this, 'use_this_timezone' ) );
+		}
+		
+		// set timezone back to what it was before
+		if ( empty( $orig_timezone ) ) {
+			date_default_timezone_set( 'UTC' );
+		} else {
+			date_default_timezone_set( $orig_timezone );
+		}
+		
+		return $result;
+	}
+	
+	/**
+	 * Filter timezone_string option and run date_i18n(), then remove the filter on timezone_string option
+	 *
+	 * @since 1.1
+	 *
+	 * @return string
+	 */
+	public function use_this_timezone() {
+		$timezone = $this->timezone_for_display;
+		
+		// only allow valid timezones
+		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
+			$timezone = '';
+		}
+		
+		return $timezone;
+	}
+	
 	/**
 	 * Logic for the shortcode.
 	 * Examples:
 	 * 1) [tribe_formatted_event_date id=1234 format="F j, Y, \\a\\t g:ia"] (notice double escaping the word "at") -- Outputs "August 2, 2017, at 4:00pm" for Event/Post ID 1234's start datetime
 	 * 2) [tribe_formatted_event_date id=1234 timezone="America/New_York" format="dS F, Y @ G:i A" start_end="end"] -- Outputs "02nd August, 2017 @ 18:00 PM" for Event/Post ID 1234's end datetime in a specific timezone
 	 * 3) [tribe_formatted_event_date format="dS F Y"] -- Outputs "02nd August 2017" for the current post ID's start datetime
-	 * 
-	 * @access: public
 	 *
 	 * @return false|string
 	 */
@@ -184,8 +289,14 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 			}
 		}
 		
+		$this->timezone_for_display = $timezone;
+		
+		if ( true === $this->php_datetime_format_constants( $format ) ) {
+			$format = constant( $format );
+		}
+		
 		// using our own methods here due to https://central.tri.be/issues/70923 (even if fixed, it is good to keep these to support backwards compatibility)
-		$event_date_as_string = $this->get_event_date_string( $id, $start_end, $event_timezone );
+		$event_date_as_string = $this->get_event_date_string( $id, $start_end, $timezone );
 		
 		if ( empty( $event_date_as_string ) ) {
 			if ( current_user_can( 'edit_posts' ) ) { // Contributor or higher
@@ -198,11 +309,8 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		// get timestamp, use it in DateTime UTC, convert it to user's desired timezone and format
 		$event_timestamp = $this->get_event_timestamp( $event_date_as_string );
 		
-		$event_datetime = new DateTime( '@' . $event_timestamp, new DateTimeZone ( 'UTC' ) );
-		$event_datetime->setTimezone( new DateTimeZone( $timezone ) );
-		
-		$event_date = $event_datetime->format( $format );
-		
+		$event_date = $this->date_i18n_custom_timezone( $format, $event_timestamp, $timezone );
+				
 		// https://developer.wordpress.org/reference/functions/sanitize_html_class/
 		$class = sanitize_html_class( $atts['class'] );
 		if ( ! empty( $class ) ) {
@@ -211,8 +319,10 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 			$class = sanitize_html_class( $this->shortcode_name );
 		}
 		
-		$output = sprintf( '<span class="%s">%s</span>',
-			$class,
+		$output = sprintf( '<span class="%s" data-event-id="%d" data-timestamp="%d">%s</span>',
+			esc_attr( $class ),
+			esc_attr( $id ),
+			esc_attr( $event_timestamp ),
 			esc_html( $event_date )
 		);
 		
