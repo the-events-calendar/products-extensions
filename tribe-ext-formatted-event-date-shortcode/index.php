@@ -10,11 +10,6 @@
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-// 2016-09-15 Cliff created for https://theeventscalendar.com/support/forums/topic/_eventstartdate-format/
-// 2016-12-07 Cliff turned into an extension
-// 2016-12-21 Cliff modified to overcome bugs in TEC Core and improve this extension's code and error messages (zero downloads at time of editing)
-// 2017-02-08 version 1.1 to make output translatable (e.g. month names), add event ID and timestamp data attributes, and enable using PHP date format constants
-
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
@@ -33,7 +28,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	public $shortcode_name = 'tribe_formatted_event_date';
 	
 	// Define the timezone to display in the output, if any
-	private $timezone_for_display = '';
+	private $timezone_for_display = false;
 	
 	/**
 	 * Setup the Extension's properties.
@@ -47,7 +42,6 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		// Set the extension's TEC URL
 		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );
 		
-		// Set the extension's version
 		$this->set_version( '1.1' );
 	}
 	
@@ -113,7 +107,6 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	/**
 	 * Get Unix Timestamp for Event Date as String
 	 *
-	 * @since 1.1
 	 * @access private
 	 *
 	 * @link https://secure.php.net/manual/class.datetime.php#datetime.constants.types
@@ -155,7 +148,6 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	 * to WordPress' locale/language setting. Note, however, that date_i18n()'s locale/translation
 	 * juggling does not translate timezone text (e.g. "EST" or "America/New_York").
 	 *
-	 * @since 1.1
 	 * @access private
 	 *
 	 * @link https://developer.wordpress.org/reference/functions/get_option/
@@ -199,18 +191,16 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	/**
 	 * Return this class' timezone, set via the shortcode's output method
 	 *
-	 * @since 1.1
-	 *
 	 * @see $this->shortcode_output()
 	 *
-	 * @return string
+	 * @return bool|string
 	 */
 	public function use_this_timezone() {
 		$timezone = $this->timezone_for_display;
 		
 		// only allow valid timezones
 		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
-			$timezone = '';
+			$timezone = false;
 		}
 		
 		return $timezone;
