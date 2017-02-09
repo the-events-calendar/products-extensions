@@ -45,7 +45,10 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.0' ); // main thing we are concerned about is '_EventTimezone' meta key, but there are protections here against it not existing anyway
 		
 		// Set the extension's TEC URL
-		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );		
+		$this->set_url( 'https://theeventscalendar.com/extensions/formatted-event-date-shortcode/' );
+		
+		// Set the extension's version
+		$this->set_version( '1.1' );
 	}
 	
 	/**
@@ -197,9 +200,11 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	}
 	
 	/**
-	 * Filter timezone_string option and run date_i18n(), then remove the filter on timezone_string option
+	 * Return this class' timezone, set via the shortcode's output method
 	 *
 	 * @since 1.1
+	 *
+	 * @see Tribe__Extension__Formatted_Event_Date_Shortcode::shortcode_output()
 	 *
 	 * @return string
 	 */
