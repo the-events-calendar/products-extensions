@@ -10,7 +10,7 @@
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-// 2017-02-08 Cliff created for https://theeventscalendar.com/support/forums/topic/keeping-orders-together-on-attendee-list/
+// 2017-02-08 Cliff created for https://theeventscalendar.com/support/forums/topic/keeping-orders-together-on-attendee-list/ and others
 
 // Do not load directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -48,8 +48,6 @@ class Tribe__Extension__Attendees_Table_Duplicates extends Tribe__Extension {
 	
 	/**
 	 * Logic for the output
-	 *
-	 * @return string
 	 */
 	public function output() {
 		wp_enqueue_script( 'jquery' );
