@@ -163,48 +163,45 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 	 *
 	 * @return bool|string
 	 */
-	private function date_i18n_custom_timezone( $format, $timestamp, $timezone = '' ) {
+	private function date_i18n_custom_timezone( $format, $timestamp ) {
 		if ( empty( $format ) || empty( $timestamp ) ) {
 			return false;
 		}
 		
-		// only allow valid timezones
-		if ( ! in_array( $timezone, timezone_identifiers_list() ) ) {
-			$timezone = '';
-		}
-		
-		// set timezone so that date_i18n() works correctly
-		$orig_timezone = date_default_timezone_get();
-		
-		if ( ! empty( $timezone ) ) {
-			date_default_timezone_set( $timezone );
-		}
+		$timezone = $this->use_this_timezone();
 		
 		// if no specific timezone, use WP's default from date_i18n(), else use the passed timezone but still run through date_i18n() to get the translation benefits
 		if ( empty( $timezone ) ) {
 			$result = date_i18n( $format, $timestamp );
 		} else {
+			// set timezone so that date_i18n() works correctly
+			$orig_timezone = date_default_timezone_get(); // will return 'UTC' as a fallback but could potentially be a TZ environment variable
+
+			if ( $orig_timezone != $timezone ) {
+				date_default_timezone_set( $timezone );
+				$revert_timezone = true;
+			}
+			
+			// get the date
 			add_filter( 'option_timezone_string', array( $this, 'use_this_timezone' ) );
 			$result = date_i18n( $format, $timestamp );
 			remove_filter( 'option_timezone_string', array( $this, 'use_this_timezone' ) );
+			
+			// set the timezone back to what it was
+			if ( ! empty( $revert_timezone ) ) {
+				date_default_timezone_set( $orig_timezone );
+			}
 		}
-		
-		// set timezone back to what it was before
-		if ( empty( $orig_timezone ) ) {
-			date_default_timezone_set( 'UTC' );
-		} else {
-			date_default_timezone_set( $orig_timezone );
-		}
-		
+				
 		return $result;
 	}
-	
+
 	/**
 	 * Return this class' timezone, set via the shortcode's output method
 	 *
 	 * @since 1.1
 	 *
-	 * @see Tribe__Extension__Formatted_Event_Date_Shortcode::shortcode_output()
+	 * @see $this->shortcode_output()
 	 *
 	 * @return string
 	 */
@@ -314,7 +311,7 @@ class Tribe__Extension__Formatted_Event_Date_Shortcode extends Tribe__Extension 
 		// get timestamp, use it in DateTime UTC, convert it to user's desired timezone and format
 		$event_timestamp = $this->get_event_timestamp( $event_date_as_string );
 		
-		$event_date = $this->date_i18n_custom_timezone( $format, $event_timestamp, $timezone );
+		$event_date = $this->date_i18n_custom_timezone( $format, $event_timestamp );
 				
 		// https://developer.wordpress.org/reference/functions/sanitize_html_class/
 		$class = sanitize_html_class( $atts['class'] );
