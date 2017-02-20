@@ -58,7 +58,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 			),
 			$this->opts_prefix . 'helper_text' => array(
 				'type' => 'html',
-				'html' => '<p>' . esc_html__( 'The following fields are from an Extension. These additional Eventbrite options allow you to change how the Eventbrite Tickets add-on operates, such as altering the API call, changing the imported data, or how the event is displayed on your site.', 'tribe-extension' ) . '</p>',
+				'html' => '<p>' . esc_html__( 'The following fields are from an Extension. These additional Eventbrite options allow you to change how the Eventbrite Tickets add-on operates, such as moving the ticket location on Single Event view, displaying tickets for Private Eventbrite events, and more.', 'tribe-extension' ) . '</p>',
 			),
 
 			$this->opts_prefix . 'content_before' => array(
