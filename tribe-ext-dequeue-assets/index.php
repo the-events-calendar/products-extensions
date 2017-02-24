@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tribe Extension: Dequeque Assets
  * Description: Dequeues any scripts or styles that are registered using the tribe_asset() function. Adds a list of dequeueable assets to WP Admin > Events > Settings.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Extension Class: Tribe__Extension__Dequeue_Assets
  * Author: Modern Tribe, Inc.
  * Author URI: http://m.tri.be/1971
@@ -74,6 +74,8 @@ class Tribe__Extension__Dequeue_Assets extends Tribe__Extension {
 	 */
 	public function construct() {
 		$this->set_url( 'https://theeventscalendar.com/extensions/dequeue-assets/' );
+		$this->set_version( '1.0.2' );
+
 		// Set this to init() straight away, so we can begin logging assets.
 		$this->set( 'init_hook', 'plugins_loaded' );
 	}
@@ -83,7 +85,10 @@ class Tribe__Extension__Dequeue_Assets extends Tribe__Extension {
 	 */
 	public function init() {
 		$this->ta_instance = Tribe__Assets::instance();
-		$this->logged_assets = tribe_get_option( $this->logged_assets_key );
+
+		// Cast this to an array. Due to a bug in v1.0.1 this might have been saved as an empty string.
+		$this->logged_assets = (array) tribe_get_option( $this->logged_assets_key, array() );
+
 		$this->dequeued_assets = array_merge(
 			tribe_get_option( $this->dequeued_assets_key . '_css', array() ),
 			tribe_get_option( $this->dequeued_assets_key . '_js', array() )
