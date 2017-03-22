@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:     Event Tickets Extension: [event_tickets_form] shortcode
+ * Plugin Name:     Event Tickets Plus Extension: [event_tickets_form] shortcode
  * Description:     Insert the ticket and RSVP forms with the [event_tickets_form] shortcode. This shortcode is an available display area for the forms in WP Admin > Events > Settings > Tickets. Select the shortcode there, then insert it into any event or page that you wish to display the ticket forms in.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__Tickets__Shortcode
@@ -90,7 +90,7 @@ class Tribe__Extension__Tickets__Shortcode extends Tribe__Extension {
 			$GLOBALS['post'] = get_post( $atts['id'] );
 		}
 
-		if ( tribe_is_event() ) {
+		if ( function_exists( 'tribe_is_event' ) && tribe_is_event() ) {
 			// For events, this action will be used when specified in Event > Settings.
 			ob_start();
 			do_action( $this->shortcode_action, $atts, $original_post );
