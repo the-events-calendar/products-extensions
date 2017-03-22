@@ -93,7 +93,7 @@ class Tribe__Extension__Tickets__Shortcode extends Tribe__Extension {
 		if ( tribe_is_event() ) {
 			// For events, this action will be used when specified in Event > Settings.
 			ob_start();
-			do_action( $this->shortcode_action, '' );
+			do_action( $this->shortcode_action, $atts, $original_post );
 			$output = ob_get_clean();
 		} else {
 			// For non events we must manually echo the forms, and remove the original hooks.
