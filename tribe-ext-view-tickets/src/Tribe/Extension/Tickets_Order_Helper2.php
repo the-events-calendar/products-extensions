@@ -1,17 +1,17 @@
 <?php
-// Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) {
-	die( '-1' );
-}
-
-if ( class_exists( 'Tribe__Extension__Tickets_Order_Helper' ) ) {
+/**
+ * Version 2 changelog:
+ * - Fixes a bug where the ticket unique ID was not properly exported
+ * - Allows the passage of attendee or order IDs
+ */
+if ( class_exists( 'Tribe__Extension__Tickets_Order_Helper2' ) ) {
 	return;
 }
 
 /**
  * Helps get the Event IDs, attendees, and ticket provider associated with an order ID
  */
-class Tribe__Extension__Tickets_Order_Helper {
+class Tribe__Extension__Tickets_Order_Helper2 {
 
 	/**
 	 * The ID of the order this class will assist with
@@ -35,6 +35,13 @@ class Tribe__Extension__Tickets_Order_Helper {
 	protected $provider_instance;
 
 	/**
+	 * Indicates if an attendee was passed instead of an order.
+	 *
+	 * @var bool
+	 */
+	protected $is_attendee = false;
+
+	/**
 	 * Sets up the variables for this order
 	 *
 	 * @param $order_id string|int The order ID
@@ -52,17 +59,19 @@ class Tribe__Extension__Tickets_Order_Helper {
 	protected function set_provider_classname() {
 		$ticket_modules = Tribe__Tickets__Tickets::modules();
 		$class_name = null;
-
-		// Accounts for RSVPs not having grouped orders.
-		if ( Tribe__Tickets__RSVP::ATTENDEE_OBJECT === get_post_type( $this->order_id ) ) {
-			$class_name = 'Tribe__Tickets__RSVP';
-		}
+		$post_type = get_post_type( $this->order_id );
 
 		foreach ( $ticket_modules as $module_class => $module_description ) {
+			if ( $module_class::ATTENDEE_OBJECT  === $post_type ) {
+				$class_name = $module_class;
+				$this->is_attendee = true;
+				break;
+			}
+
 			$event_id = $module_class::get_instance()->get_event_id_from_order_id( $this->order_id );
 
 			// This instance is the correct ticket provider.
-			if ( false !== $event_id ) {
+			if ( false !== $event_id || $module_class::ATTENDEE_OBJECT  === $post_type ) {
 				$class_name = $module_class;
 				break;
 			}
@@ -117,9 +126,19 @@ class Tribe__Extension__Tickets_Order_Helper {
 		}
 
 		foreach ( $event_attendees as $attendee ) {
-			if ( ! isset( $attendee['order_id'] ) || intval( $attendee['order_id'] ) !== $this->order_id ) {
+
+			if ( $this->is_attendee ) {
+				if ( ! isset( $attendee['attendee_id'] ) || $attendee['attendee_id'] !== $this->order_id ) {
+					// This is an attendee, and attendee IF doesn't match
+					continue;
+				}
+			} elseif ( ! isset( $attendee['order_id'] ) || intval( $attendee['order_id'] ) !== $this->order_id ) {
+				// This is an order, and order ID doesn't match.
 				continue;
 			}
+
+			$ticket_unique_id = get_post_meta( $attendee['attendee_id'], '_unique_id', true );
+			$ticket_unique_id = ( '' === $ticket_unique_id ) ? $this->order_id : $ticket_unique_id;
 
 			// Oddly the attendees email demands a slightly different format for most of these.
 			// So below we duplicate keys to give it the format it expects.
@@ -127,7 +146,7 @@ class Tribe__Extension__Tickets_Order_Helper {
 			$attendee['ticket_name'] = $attendee['ticket'];
 			$attendee['holder_name'] = $attendee['purchaser_name'];
 			$attendee['order_id'] = $this->order_id;
-			$attendee['ticket_id'] = $attendee['product_id'];
+			$attendee['ticket_id'] = $ticket_unique_id;
 			$attendee['qr_ticket_id'] = $attendee['attendee_id'];
 			$attendee['security_code'] = $attendee['security'];
 
@@ -146,8 +165,8 @@ class Tribe__Extension__Tickets_Order_Helper {
 		$event_ids = array();
 
 		// Account for RSVP not having proper order IDs.
-		if ( 'Tribe__Tickets__RSVP' === $this->provider_classname ) {
-			$id_query = get_post_meta( $this->order_id, Tribe__Tickets__RSVP::ATTENDEE_EVENT_KEY );
+		if ( $this->is_attendee ) {
+			$id_query = get_post_meta( $this->order_id, constant( $this->provider_classname . '::ATTENDEE_EVENT_KEY' ) );
 
 			foreach ( $id_query as $i ) {
 				$id = intval( $i );
