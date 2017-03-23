@@ -52,8 +52,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/show-print-tickets/' );
 		$this->set_version( '2.0.0' );
-
-
 	}
 
 	/**
