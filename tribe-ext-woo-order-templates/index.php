@@ -2,6 +2,7 @@
 /**
  * Plugin Name:     Event Tickets Plus Extension: Enhance Woo Order Templates
  * Description:     Adds event and attendee information to the WooCommerce order pages, including emails and the checkout screen.
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension__Woo_Order_Templates
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -10,10 +11,10 @@
  */
 defined( 'WPINC' ) or die;
 
-// Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) { die( '-1' ); }
 // Do not load unless Tribe Common is fully loaded.
-if ( ! class_exists( 'Tribe__Extension' ) ) { return; }
+if ( ! class_exists( 'Tribe__Extension' ) ) {
+	return;
+}
 
 /**
  * Extension main class, class begins loading on init() function.
@@ -35,7 +36,7 @@ class Tribe__Extension__Woo_Order_Templates extends Tribe__Extension {
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Tickets__Main' );
 		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
-
+		$this->set_version( '1.0.1' );
 		$this->set_url( 'https://theeventscalendar.com/extensions/enhance-woo-order-screens-and-emails/' );
 	}
 
@@ -60,15 +61,19 @@ class Tribe__Extension__Woo_Order_Templates extends Tribe__Extension {
 	 */
 	public function woocommerce_echo_event_info( $item_id, $item, $order, $plain_text = '' ) {
 		$wootix = Tribe__Tickets_Plus__Commerce__WooCommerce__Main::get_instance();
+		$order_status = $order->get_status();
+		$item_data = $item->get_data();
+
 		// Generate tickets early so we can get attendee meta.
 		// Note, if the default order status is one that does affect stock, no tickets will be generated.
-		$wootix->generate_tickets(
-			$order->id,
-			$order->get_status(),
-			$order->get_status()
+		// Since Event Tickets Plus is not yet fully Woo 3.0 compatible, suppress notices.
+		@$wootix->generate_tickets(
+			$order->get_id(),
+			$order_status,
+			$order_status
 		);
 
-		$event = $wootix->get_event_for_ticket( $item['product_id'] );
+		$event = $wootix->get_event_for_ticket( $item_data['product_id'] );
 
 		// Show event details if this ticket is for a tribe event.
 		if ( ! empty( $event ) ) {
@@ -96,7 +101,7 @@ class Tribe__Extension__Woo_Order_Templates extends Tribe__Extension {
 		}
 
 		$this->output_woo_attendee_styles();
-		$this->echo_attendee_meta( $order->id, $item['product_id'] );
+		$this->echo_attendee_meta( $order->get_id(), $item_data['product_id'] );
 	}
 
 	/**
