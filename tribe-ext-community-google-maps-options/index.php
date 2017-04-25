@@ -33,7 +33,8 @@ class Tribe__Extension__Show_Google_Maps extends Tribe__Extension {
 	 */
 	public function construct() {
 
-		$this->add_required_plugin( 'Tribe__Events__Community__Main' );
+		// Only work after version 4.5 as previous versions included the field
+		$this->add_required_plugin( 'Tribe__Events__Community__Main', '4.5' );
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/add-google-maps-display-and-link-options/' );
 	}
