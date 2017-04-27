@@ -76,11 +76,6 @@ Create a blank `index.php` file inside your new extension directory, and insert 
  * License:         GPLv2 or later
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  */
- 
-// Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) {
-    die( '-1' );
-}
 
 // Do not load unless Tribe Common is fully loaded.
 if ( ! class_exists( 'Tribe__Extension' ) ) {
@@ -326,11 +321,6 @@ Here is the finished Hide Tribe Bar extension example the above steps walked you
  * License:         GPLv2 or later
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  */
-
-// Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) {
-    die( '-1' );
-}
 
 // Do not load unless Tribe Common is fully loaded.
 if ( ! class_exists( 'Tribe__Extension' ) ) {
