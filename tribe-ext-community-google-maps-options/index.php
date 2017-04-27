@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     Community Events: Add Google Map Display and Link Options
- * Description:        Adds the Google Map Display and Google Map Link options in the venue section of Community Event's frontend editor.
+ * Description:     Adds the Google Map Display and Google Map Link options in the venue section of Community Event's frontend editor.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__Show_Google_Maps
  * Author:          Modern Tribe, Inc.
@@ -10,16 +10,10 @@
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  */
 
-// Do not load directly.
-if ( ! defined( 'ABSPATH' ) ) {
-	die( '-1' );
-}
-
 // Do not load unless Tribe Common is fully loaded.
 if ( ! class_exists( 'Tribe__Extension' ) ) {
 	return;
 }
-
 
 /**
  * Extension main class, class begins loading on init() function.
