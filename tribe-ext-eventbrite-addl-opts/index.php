@@ -26,8 +26,6 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
-	 *
-	 * @access protected
 	 */
 	protected function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.4' );
@@ -38,7 +36,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Adds settings options
+	 * Adds settings options.
 	 */
 	public function add_settings() {
 		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
@@ -66,9 +64,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 
 			$this->opts_prefix . 'iframe_px' => array(
 				'type'            => 'text',
-				'label'           => esc_html__( 'Display Tickets iframe Height (pixels)', 'tribe-extension' ),
+				'label'           => esc_html__( 'Tickets area height', 'tribe-extension' ),
 				'default'         => 200,
-				'tooltip'         => esc_html__( 'The default is 200.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'The height of the iframe ticket area in pixels.', 'tribe-extension' ),
 				'validation_type' => 'positive_int',
 			),
 
@@ -76,7 +74,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 				'type'            => 'dropdown',
 				'label'           => esc_html__( 'Eventbrite Locale', 'tribe-extension' ),
 				'default'         => 'en_US',
-				'tooltip'         => esc_html__( 'This affects the API call.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'This tells eventbrite.com which locale to use.', 'tribe-extension' ),
 				'validation_type' => 'options',
 				'options'         => $this->eb_locale_country_name_array(),
 			),
@@ -149,7 +147,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the HTML to be output before the iframe
+	 * Get the HTML to be output before the iframe.
+	 *
+	 * @see 'tribe_events_eventbrite_before_the_tickets'
 	 *
 	 * @return mixed|string
 	 */
@@ -162,7 +162,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the HTML to be output after the iframe
+	 * Get the HTML to be output after the iframe.
+	 *
+	 * @see 'tribe_events_eventbrite_after_the_tickets'
 	 *
 	 * @return mixed|string
 	 */
@@ -175,11 +177,13 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Replace the iframe's inline styling height within the ticket area HTML
+	 * Replace the iframe's inline styling height within the ticket area HTML.
 	 *
-	 * @param $html
-	 * @param $event_id
-	 * @param $post_id
+	 * @see 'tribe_events_eb_iframe_html'
+	 *
+	 * @param string $html
+	 * @param string $event_id associated Eventbrite ID
+	 * @param int    $post_id
 	 *
 	 * @return mixed|string
 	 */
@@ -204,14 +208,17 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the Eventbrite Currency setting value
-	 * Affects the API call
+	 * Get the Eventbrite Currency setting value.
 	 *
-	 * @param $args
-	 * @param $mode
-	 * @param $eventbrite_id
-	 * @param $post
-	 * @param $params
+	 * Affects the API call.
+	 *
+	 * @see 'tribe_eb_api_sync_event'
+	 *
+	 * @param array   $args
+	 * @param string  $mode
+	 * @param int     $eventbrite_id
+	 * @param WP_Post $post
+	 * @param array   $params
 	 *
 	 * @return mixed
 	 */
@@ -224,10 +231,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * List of locales supported by Eventbrite
-	 * This list is hand-crafted from the Region Selector in the global footer of Eventbrite.com pages. Screenshot at https://cl.ly/412T23182w1Q
+	 * List of locales supported by Eventbrite.
 	 *
-	 * @access private
+	 * This list is hand-crafted from the Region Selector in the global footer of Eventbrite.com pages. Screenshot at https://cl.ly/412T23182w1Q.
 	 *
 	 * @return array
 	 */
@@ -258,16 +264,15 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Joins the array keys with its values
-	 * Used for display purposes in the settings/choices
+	 * Joins the array keys with its values.
 	 *
-	 * @param string $array
+	 * Used for display purposes in the settings/choices.
 	 *
-	 * @access private
+	 * @param array $array
 	 *
 	 * @return array|bool
 	 */
-	private function append_array_keys_to_values( $array = '' ) {
+	private function append_array_keys_to_values( $array = array() ) {
 		if ( ! is_array( $array ) || empty( $array ) ) {
 			return false;
 		}
@@ -282,9 +287,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get user-selected Eventbrite locale
-	 *
-	 * @access private
+	 * Get user-selected Eventbrite locale.
 	 *
 	 * @return string
 	 */
@@ -303,10 +306,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get Eventbrite currency from specified locale
-	 * This list is hand-crafted from noting the currency specified in the calculator at https://www.eventbrite.com/fees/ (per TLD) after selecting each region from Eventbrite's Region Selector. Could just play with PHP's https://secure.php.net/localeconv but decided against it to avoid changing system settings.
+	 * Get Eventbrite currency from specified locale.
 	 *
-	 * @access private
+	 * This list is hand-crafted from noting the currency specified in the calculator at https://www.eventbrite.com/fees/ (per TLD) after selecting each region from Eventbrite's Region Selector. Could just play with PHP's https://secure.php.net/localeconv but decided against it to avoid changing system settings.
 	 *
 	 * @return string
 	 */
@@ -339,10 +341,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get Eventbrite Top-Level Domain (TLD) from specified locale
-	 * This list is hand-crafted from noting the domain change after selecting each region from Eventbrite's Region Selector.
+	 * Get Eventbrite Top-Level Domain (TLD) from specified locale.
 	 *
-	 * @access private
+	 * This list is hand-crafted from noting the domain change after selecting each region from Eventbrite's Region Selector.
 	 *
 	 * @return string
 	 */
@@ -375,9 +376,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Get Eventbrite TLD from user-chosen Eventbrite Locale
-	 *
-	 * @access private
+	 * Get Eventbrite TLD from user-chosen Eventbrite Locale.
 	 *
 	 * @return string
 	 */
@@ -386,9 +385,11 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Set the Top-Level Domain (TLD) to be used for the Eventbrite API call
+	 * Set the Top-Level Domain (TLD) to be used for the Eventbrite API call.
 	 *
-	 * @param $url
+	 * @see 'tribe-eventbrite-base_api_url'
+	 *
+	 * @param string $url
 	 *
 	 * @return mixed|string
 	 */
@@ -401,7 +402,9 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Displays Eventbrite Tickets iframe even if the Eventbrite event is Private
+	 * Displays Eventbrite Tickets iframe even if the Eventbrite event is Private.
+	 *
+	 * @see 'tribe_events_eventbrite_the_tickets'
 	 *
 	 * @return string|void
 	 */
@@ -443,9 +446,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 	}
 
 	/**
-	 * Create the Single Event display locations options array
-	 *
-	 * @access private
+	 * Create the Single Event display locations options array.
 	 *
 	 * @return array
 	 */
