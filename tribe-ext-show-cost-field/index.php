@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     Event Tickets Plus Extension: Show Cost Fields
  * Description:     Event Tickets Plus hides the basic cost fields when activated, and automatically overrides the info with the costs of your tickets. When this extension is activated alongside Event Tickets Plus it will restore the hidden fields, allowing you to manually set the data.
- * Version:         1.0.0
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension__Show_Cost_Field
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -31,8 +31,14 @@ class Tribe__Extension__Show_Cost_Field extends Tribe__Extension {
 	 * This always executes even if the required plugins are not present.
 	 */
 	public function construct() {
-		$this->add_required_plugin( 'Tribe__Tickets__Main' );
-		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
+		if ( ! class_exists( 'Tribe__Events__Tickets__Eventbrite__Main' ) ) {
+			$this->add_required_plugin( 'Tribe__Events__Main' );
+			$this->add_required_plugin( 'Tribe__Tickets__Main' );
+			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
+		} else {
+			$this->add_required_plugin( 'Tribe__Events__Main' );
+			$this->add_required_plugin( 'Tribe__Events__Tickets__Eventbrite__Main' );
+		}
 		$this->set_url( 'https://theeventscalendar.com/extensions/show-cost-fields/' );
 	}
 
