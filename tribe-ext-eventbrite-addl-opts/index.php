@@ -81,9 +81,8 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 
 			$this->opts_prefix . 'ticket_single_location' => array(
 				'type'            => 'dropdown',
-				'label'           => esc_html__( 'Single Event Display Location', 'tribe-extension' ),
+				'label'           => esc_html__( 'Location of Tickets form', 'tribe-extension' ),
 				'default'         => 'tribe_events_single_event_after_the_meta',
-				'tooltip'         => esc_html__( 'Where should the tickets area display on your Single Events pages?', 'tribe-extension' ),
 				'validation_type' => 'options',
 				'options'         => $this->single_event_display_locations_array(),
 			),
