@@ -34,7 +34,9 @@ class Tribe__Extension__Fix_Elegant_Themes_Posts_Per_Page extends Tribe__Extensi
 	 * Extension initialization and hooks.
 	 */
 	public function init() {
-		add_filter( 'parse_query', array( $this, 'remove_et_custom_posts_per_page' ), 100 );
+		if ( ! is_admin() ) {
+			add_filter( 'parse_query', array( $this, 'remove_et_custom_posts_per_page' ), 100 );
+		}
 	}
 
 	/**
