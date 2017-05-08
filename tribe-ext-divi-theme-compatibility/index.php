@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:     The Events Calendar Extension: Elegant Themes Posts Per Page Fix
- * Description:     Fixes the pagination override from Divi or other themes by Elegant Themes. The Event Calendar's "Number of events to show per page" setting will be used where applicable, as expected.
+ * Plugin Name:     The Events Calendar Extension: Divi Theme Compatibility
+ * Description:     Makes The Events Calendar compatible with Elegant Themes' Divi theme and Divi-based themes (e.g. Extra theme). The posts_per_page / pagination fix should also work for all their themes, even if not Divi-based.
  * Version:         1.0.0
- * Extension Class: Tribe__Extension__Fix_Elegant_Themes_Posts_Per_Page
+ * Extension Class: Tribe__Extension__Divi_Theme_Compatibility
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
  * License:         GPLv2 or later
@@ -18,7 +18,7 @@ if ( ! class_exists( 'Tribe__Extension' ) ) {
 /**
  * Extension main class, class begins loading on init() function.
  */
-class Tribe__Extension__Fix_Elegant_Themes_Posts_Per_Page extends Tribe__Extension {
+class Tribe__Extension__Divi_Theme_Compatibility extends Tribe__Extension {
 
 	/**
 	 * Setup the Extension's properties.
@@ -27,7 +27,7 @@ class Tribe__Extension__Fix_Elegant_Themes_Posts_Per_Page extends Tribe__Extensi
 	 */
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main' );
-		$this->set_url( 'https://theeventscalendar.com/extensions/elegant-themes-posts-per-page-fix/' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/elegant-themes-divi-theme-compatibility/' );
 	}
 
 	/**
@@ -41,6 +41,8 @@ class Tribe__Extension__Fix_Elegant_Themes_Posts_Per_Page extends Tribe__Extensi
 
 	/**
 	 * Remove Elegant Themes' custom posts per page.
+	 *
+	 * Applies to ALL themes by Elegant Themes, not just Divi and Divi-based themes
 	 *
 	 * @see et_custom_posts_per_page()
 	 *
