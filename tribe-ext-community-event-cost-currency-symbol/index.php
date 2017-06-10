@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     The Events Calendar: Community Events Extension: Add Event Cost Currency Symbol
- * Description:     Adds a currency symbol selector option to the Community Event's form.
+ * Description:     Adds a currency symbol selector option to the Community Event's form. Settings are at wp-admin > Events > Settings > Community tab.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__CE_Event_Cost_Currency_Symbol
  * Author:          Modern Tribe, Inc.
@@ -53,14 +53,25 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		// Setup fields on the settings page
 		$setting_helper = new Tribe__Settings_Helper();
 
-		$fields = array(
-			'tribe_ext_ce_cost_currency_symbols' => array(
-				'type'            => 'text',
-				'label'           => esc_html__( 'Event Cost: Allowed Currency Symbols', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Comma-separated list of allowed currency symbols. First one entered will be the default, and the rest will display in the order you enter them.', 'tribe-extension' ),
-				'validation_type' => 'textarea',
-			),
+		// List of allowed symbols
+		$fields['tribe_ext_ce_cost_currency_symbols'] = array(
+			'type'            => 'text',
+			'label'           => esc_html__( 'Event Cost: Allowed Currency Symbols', 'the-events-calendar' ),
+			'tooltip'         => esc_html__( 'Comma-separated list of allowed currency symbols. The drop-down will display these options in the order you enter them. Example 1: $,€,£,Fr,¥,CNY,C$,AU$. Example 2: USD,EUR,GBP,JPY,CNY,CAD,AUD', 'tribe-extension' ),
+			'default'         => '$,€,£',
+			'validation_type' => 'textarea',
 		);
+
+		// only allow setting Default if List is created
+		if ( tribe_get_option( 'tribe_ext_ce_cost_currency_symbols' ) ) {
+			$fields['tribe_ext_ce_cost_currency_symbol_default'] = array(
+				'type'            => 'dropdown',
+				'label'           => esc_html__( 'Event Cost: Default Currency Symbol', 'the-events-calendar' ),
+				'tooltip'         => esc_html__( 'The default currency symbol for new events and when editing existing events that do not yet have a set currency symbol. Note: You must first enter the Allowed Currency Symbols before setting this option.', 'tribe-extension' ),
+				'options'         => $this->symbol_list_array( true ),
+				'validation_type' => 'options',
+			);
+		}
 
 		$setting_helper->add_fields(
 			$fields,
@@ -72,14 +83,12 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 	/**
 	 * TODO
 	 *
-	 * @see sanitize_text_field()
-	 *
 	 * @return array
 	 */
-	protected function symbol_list_array() {
+	public function symbol_list_array( $prepend_empty = false ) {
 		$setting = tribe_get_option( 'tribe_ext_ce_cost_currency_symbols' );
 
-		if ( '' === $setting ) {
+		if ( '' === (string) $setting ) {
 			return array();
 		}
 
@@ -92,8 +101,12 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		foreach ( $settings as $key => $value ) {
 			$value = esc_attr( sanitize_text_field( $value ) );
 			if ( '' !== $value ) {
-				$symbols[] = $value;
+				$symbols[$value] = $value;
 			}
+		}
+
+		if ( ! empty( (bool) $prepend_empty ) ) {
+			$symbols = array( '' => '' ) + $symbols;
 		}
 
 		return $symbols;
@@ -106,14 +119,19 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			return '';
 		}
 
-		$current_symbol = $this->get_current_symbol();
+		$current_symbol = (string) $this->get_current_symbol();
+
+		if ( '' === $current_symbol ) {
+			$default_symbol = tribe_get_option( 'tribe_ext_ce_cost_currency_symbol_default' );
+			$current_symbol = apply_filters( 'tribe_ext_ce_cost_currency_symbol_default', $default_symbol );
+		}
 
 		$output = sprintf( '%1$s<option value=""></option>%1$s', PHP_EOL );
 
 		foreach ( $symbol_list_array as $key => $value ) {
 			$value = esc_attr( $value );
 
-			$selected = selected( $value, $current_symbol );
+			$selected = selected( $value, $current_symbol, false );
 
 			$opt_text = esc_attr_x( $value, 'Currency symbol', 'tribe-extension' );
 
@@ -161,7 +179,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 					<select
 						id="EventCurrencySymbol"
 						aria-label="<?php esc_html_e( 'Currency Symbol', 'tribe-extension' ); ?>"
-						name="EventCostCurrencySymbol"
+						name="EventCurrencySymbol"
 						class="event-cost-currency-symbol tribe-dropdown"
 						placeholder="<?php esc_attr_e( 'Select a currency symbol', 'tribe-extension' ); ?>"
 					>
