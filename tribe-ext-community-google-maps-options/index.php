@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:     Community Events: Add Google Map Display and Link Options
+ * Plugin Name:     The Events Calendar: Community Events: Add Google Map Display and Link Options
  * Description:     Adds the Google Map Display and Google Map Link options in the venue section of Community Event's frontend editor.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__Show_Google_Maps
@@ -57,7 +57,11 @@ class Tribe__Extension__Show_Google_Maps extends Tribe__Extension {
 			<?php
 			if ( tribe_get_option( 'embedGoogleMaps', true ) ) { // Only show if embed option selected
 
-				$google_map_toggle = ( tribe_embed_google_map( $post->ID ) || get_post_status( $post->ID ) == 'auto-draft' ) ? true : false;
+				$google_map_toggle = true;
+				if ( $post->ID ) {
+					$google_map_toggle = get_post_meta( $post->ID, '_EventShowMap', true );
+				}
+
 				?>
 				<tr id="google_map_toggle" class="remain-visible">
 					<td class='tribe-table-field-label'><?php esc_html_e( 'Show Google Map:', 'the-events-calendar' ); ?></td>
@@ -66,7 +70,7 @@ class Tribe__Extension__Show_Google_Maps extends Tribe__Extension {
 								tabindex="<?php tribe_events_tab_index(); ?>"
 								type="checkbox"
 								id="EventShowMap"
-								name="EventShowMap"
+								name="venue[EventShowMap][]"
 								value="1"
 							<?php checked( $google_map_toggle ); ?>
 						/>
@@ -75,7 +79,11 @@ class Tribe__Extension__Show_Google_Maps extends Tribe__Extension {
 				<?php
 			}
 
-			$google_map_link_toggle = ( get_post_status( $post->ID ) == 'auto-draft' && $google_map_toggle ) ? true : get_post_meta( $post->ID, '_EventShowMapLink', true );
+			$google_map_link_toggle = true;
+			if ( $post->ID ) {
+				$google_map_link_toggle = get_post_meta( $post->ID, '_EventShowMapLink', true );
+			}
+
 			?>
 			<tr id="google_map_link_toggle" class="remain-visible">
 				<td class='tribe-table-field-label'><?php esc_html_e( 'Show Google Maps Link:', 'the-events-calendar' ); ?></td>
@@ -84,7 +92,7 @@ class Tribe__Extension__Show_Google_Maps extends Tribe__Extension {
 							tabindex="<?php tribe_events_tab_index(); ?>"
 							type="checkbox"
 							id="EventShowMapLink"
-							name="EventShowMapLink"
+							name="venue[EventShowMapLink][]"
 							value="1"
 						<?php checked( $google_map_link_toggle ); ?>
 					/>
