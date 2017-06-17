@@ -262,6 +262,8 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 					$priority = $value['priority'];
 				}
 
+				$priority = apply_filters( 'tribe_ext_calendar_widget_area_priority', $priority, $value );
+
 				$priority = (int) $priority;
 
 				if ( ! empty( $value['filter'] ) ) {
