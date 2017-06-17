@@ -337,14 +337,14 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	}
 
 	/**
-	 * Below Event Single Details EARLY widget area
+	 * Below Event Single Details BEFORE OTHERS widget area
 	 */
 	public function single_event_after_the_meta_early() {
 		dynamic_sidebar( 'tec_ext_widget_areas__single_event_after_the_meta_early' );
 	}
 
 	/**
-	 * Below Event Single Details LATE widget area
+	 * Below Event Single Details AFTER OTHERS widget area
 	 */
 	public function single_event_after_the_meta_late() {
 		dynamic_sidebar( 'tec_ext_widget_areas__single_event_after_the_meta_late' );
