@@ -44,6 +44,9 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 
 		// Set the extension's TEC URL
 		$this->set_url( 'https://theeventscalendar.com/extensions/calendar-widget-areas/' );
+
+		// Set the extension's version number
+		$this->set_version( '1.0.0' );
 	}
 
 	/**
@@ -116,7 +119,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			array(
 				'hook'     => 'tribe_events_single_event_after_the_meta',
 				'method'   => 'single_event_after_the_meta_early',
-				'name'     => __( 'TEC Single: Below Details (Earlier)', 'tribe-extension' ),
+				'name'     => __( 'TEC Single: Below Details (Before Others)', 'tribe-extension' ),
 				'desc'     => __( 'Widgets in this area will be shown DIRECTLY BELOW the Single Event Details (above Related Events and Tickets, if displayed).', 'tribe-extension' ),
 				'priority' => 1,
 			),
@@ -124,7 +127,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			array(
 				'hook'     => 'tribe_events_single_event_after_the_meta',
 				'method'   => 'single_event_after_the_meta_late',
-				'name'     => __( 'TEC Single: Below Details (Later)', 'tribe-extension' ),
+				'name'     => __( 'TEC Single: Below Details (After Others)', 'tribe-extension' ),
 				'desc'     => __( 'Widgets in this area will be shown BELOW the Single Event Details (below Related Events and Tickets, if displayed).', 'tribe-extension' ),
 				'priority' => 100,
 			),
