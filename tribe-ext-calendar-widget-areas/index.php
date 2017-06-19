@@ -117,7 +117,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 				'hook'     => 'tribe_events_single_event_after_the_meta',
 				'method'   => 'single_event_after_the_meta_early',
 				'name'     => __( 'TEC Single: Below Details (Before Others)', 'tribe-extension' ),
-				'desc'     => __( 'Widgets in this area will be shown DIRECTLY BELOW the Single Event Details (above Related Events and Tickets, if displayed).', 'tribe-extension' ),
+				'desc'     => __( 'Widgets in this area will be shown DIRECTLY BELOW the Single Event Details (before Related Events and Tickets, if displayed).', 'tribe-extension' ),
 				'priority' => 1,
 			),
 			// details
@@ -125,7 +125,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 				'hook'     => 'tribe_events_single_event_after_the_meta',
 				'method'   => 'single_event_after_the_meta_late',
 				'name'     => __( 'TEC Single: Below Details (After Others)', 'tribe-extension' ),
-				'desc'     => __( 'Widgets in this area will be shown BELOW the Single Event Details (below Related Events and Tickets, if displayed).', 'tribe-extension' ),
+				'desc'     => __( 'Widgets in this area will be shown BELOW the Single Event Details (after Related Events and Tickets, if displayed).', 'tribe-extension' ),
 				'priority' => 100,
 			),
 			// template
@@ -252,6 +252,8 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 
 		add_action( 'admin_init', array( $this, 'add_settings' ) );
 
+		add_action( 'init', array( $this, 'enqueue_styles' ) );
+
 		foreach ( $this->get_enabled_areas_full_details() as $value ) {
 			if ( method_exists( $this, $value['method'] ) ) {
 				if ( empty( $value['priority'] ) ) {
@@ -259,6 +261,8 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 				} else {
 					$priority = $value['priority'];
 				}
+
+				$priority = apply_filters( 'tribe_ext_calendar_widget_area_priority', $priority, $value );
 
 				$priority = (int) $priority;
 
@@ -286,6 +290,14 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 		}
 	}
 
+	/**
+	 * Register and enqueue stylesheet
+	 */
+	public function enqueue_styles() {
+		wp_register_style( 'tribe-ext-calendar-widget-areas', plugin_dir_url( __FILE__ ) . 'src/resources/css/tribe-ext-calendar-widget-areas.css', array(), $this->get_version() );
+
+		wp_enqueue_style( 'tribe-ext-calendar-widget-areas' );
+	}
 
 	/**
 	 * Before Calendar widget area
@@ -294,14 +306,12 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 		dynamic_sidebar( 'tec_ext_widget_areas__before_template' );
 	}
 
-
 	/**
 	 * After Calendar widget area
 	 */
 	public function after_template() {
 		dynamic_sidebar( 'tec_ext_widget_areas__after_template' );
 	}
-
 
 	/**
 	 * Before Event Single widget area
@@ -351,7 +361,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * After Event Single widget area
 	 */
 	public function single_after_view() {
-		if ( ! is_singular( Tribe__Events__Main::POSTTYPE ) ) {
+		if ( is_singular( Tribe__Events__Main::POSTTYPE ) ) {
 			dynamic_sidebar( 'tec_ext_widget_areas__single_after_view' );
 		}
 	}
