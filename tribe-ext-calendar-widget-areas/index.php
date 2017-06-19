@@ -252,7 +252,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 
 		add_action( 'admin_init', array( $this, 'add_settings' ) );
 
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
+		add_action( 'init', array( $this, 'enqueue_styles' ) );
 
 		foreach ( $this->get_enabled_areas_full_details() as $value ) {
 			if ( method_exists( $this, $value['method'] ) ) {
