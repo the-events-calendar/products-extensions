@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name:     The Events Calendar: Community Events Extension: Add Event Cost Currency Symbol
- * Description:     Adds a currency symbol selector option to the Community Event's form. This extension's settings are at wp-admin > Events > Settings > Community tab. Additionally, the event creator can override the currency symbol's position instead of using your site's default from wp-admin > Events > Settings > General tab.
+ * Plugin Name:     The Events Calendar Extension: Community Events Cost Currency Symbol
+ * Description:     Adds a currency symbol selector option to the Community Events form (must first be setup at wp-admin > Events > Settings > Community tab > Form Defaults section). Additionally, the event creator can override the currency symbol's position instead of using your site's default from wp-admin > Events > Settings > General tab.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__CE_Event_Cost_Currency_Symbol
  * Author:          Modern Tribe, Inc.
@@ -29,9 +29,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		// Only works with/after version 4.5 as previous versions included the field
 		$this->add_required_plugin( 'Tribe__Events__Community__Main', '4.5' );
 
-		// TODO: $this->set_url( 'https://theeventscalendar.com/extensions//' );
-
-		// possibly NOT run this extension (even if activated) if tribe_events_admin_show_cost_field() is false. Wouldn't affect front-end CE form, just that the Community Events option wouldn't then appear.
+		$this->set_url( 'https://theeventscalendar.com/extensions/community-events-cost-currency-symbol/' );
 	}
 
 	/**
@@ -43,7 +41,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 	}
 
 	/**
-	 * Add options to Tribe settings page
+	 * Add options to Tribe settings page.
 	 *
 	 * @see Tribe__Extension__Settings_Helper
 	 */
@@ -66,19 +64,35 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			$fields['tribe_ext_ce_cost_currency_symbol_default'] = array(
 				'type'            => 'dropdown',
 				'label'           => esc_html__( 'Event Cost: Default Currency Symbol', 'tribe-extension' ),
-				'tooltip'         => esc_html__( 'The default currency symbol for new events (does not apply to editing existing events).', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'The default currency symbol for new events (does not apply when editing existing events). Leave blank to not set a default.', 'tribe-extension' ),
 				'options'         => $this->symbol_list_array( true ),
 				'validation_type' => 'options',
 			);
 		}
 
+		// List of allowed symbols
+		$fields['tribe_ext_ce_cost_currency_symbol_position_disabled'] = array(
+			'type'            => 'checkbox_bool',
+			'label'           => esc_html__( 'Event Cost: Disallow Currency Position Selector', 'tribe-extension' ),
+			'tooltip'         => esc_html__( 'If checked, event creators will not be able to change the currency position (before or after the cost) and your site default from the General settings tab will be used.', 'tribe-extension' ),
+			'default'         => false,
+			'validation_type' => 'boolean',
+		);
+
 		$setting_helper->add_fields(
 			$fields,
 			'community',
-			'current-community-events-slug'
+			'single_geography_mode' // At the bottom of the "Form Defaults" section
 		);
 	}
 
+	/**
+	 * Get list of allowed symbols as an array.
+	 *
+	 * @param bool $prepend_empty
+	 *
+	 * @return array
+	 */
 	public function symbol_list_array( $prepend_empty = false ) {
 		$setting = tribe_get_option( 'tribe_ext_ce_cost_currency_symbols' );
 
@@ -106,6 +120,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return $symbols;
 	}
 
+	/**
+	 * Get the set currency symbol.
+	 *
+	 * @return string|void
+	 */
 	protected function get_current_symbol() {
 		$post_id = Tribe__Main::post_id_helper();
 
@@ -119,6 +138,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return esc_attr( $currency_symbol );
 	}
 
+	/**
+	 * Get the set currency symbol position.
+	 *
+	 * @return string|void
+	 */
 	protected function get_current_symbol_position() {
 		$post_id = Tribe__Main::post_id_helper();
 
@@ -132,6 +156,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return esc_attr( $prefix_suffix );
 	}
 
+	/**
+	 * Get the default currency position
+	 *
+	 * @return string
+	 */
 	protected function get_symbol_position_default() {
 		$default_position = tribe_get_option( 'reverseCurrencyPosition' ); // boolean
 		if ( ! empty( $default_position ) ) {
@@ -145,6 +174,13 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return sanitize_text_field( $default_position );
 	}
 
+	/**
+	 * Get the symbol position phrase
+	 *
+	 * @param string $position
+	 *
+	 * @return string
+	 */
 	protected function get_symbol_position_phrase( $position = 'prefix' ) {
 		if ( 'prefix' === $position ) {
 			$output = esc_attr_x( 'Before Cost', 'Currency symbol position', 'tribe-extension' );
@@ -155,6 +191,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return $output;
 	}
 
+	/**
+	 * Build the list of select options for the allowed currency symbols.
+	 *
+	 * @return string
+	 */
 	protected function symbol_list_select_options() {
 		$symbol_list_array = $this->symbol_list_array();
 
@@ -166,10 +207,18 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 
 		$post_id = Tribe__Main::post_id_helper();
 
-		// Awaiting https://central.tri.be/issues/80685 instead of the empty() check here
-		if ( '' === $current_symbol && empty( $post_id ) ) {
-			$default_symbol = tribe_get_option( 'tribe_ext_ce_cost_currency_symbol_default' );
-			$current_symbol = apply_filters( 'tribe_ext_ce_cost_currency_symbol_default', $default_symbol );
+		/**
+		 * If currency symbol is not set and we verify we are on the Add New
+		 * Event version of the Community Events form, then set the currency
+		 * symbol to the default setting. This avoids setting a purposefully-blank
+		 * currency symbol to the default symbol when on the Edit Event version of
+		 * the Community Events form.
+		 */
+		if (
+			'' === $current_symbol
+			&& $this->is_community_page( 'add-event' )
+		) {
+			$current_symbol = tribe_get_option( 'tribe_ext_ce_cost_currency_symbol_default' );
 		}
 
 		$output = sprintf( '%1$s<option value=""></option>%1$s', PHP_EOL );
@@ -187,6 +236,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return $output;
 	}
 
+	/**
+	 * Build the list of select options for the symbol position.
+	 *
+	 * @return string
+	 */
 	protected function symbol_position_list_select_options() {
 		$default_position = $this->get_symbol_position_default();
 
@@ -224,14 +278,58 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		return $output;
 	}
 
+	/**
+	 * Detect which mode of the Community Events form we are currently in.
+	 *
+	 * @param null $page
+	 *
+	 * @return bool
+	 */
+	protected function is_community_page( $page = null ) {
+		$main = tribe( 'community.main' );
+
+		$event_post_type = Tribe__Events__Main::POSTTYPE;
+		$action          = Tribe__Utils__Array::get( $main->context, 'action' );
+		$ce_post_type    = Tribe__Utils__Array::get( $main->context, 'post_type', $event_post_type ); // assume event post type if not set
+
+		switch ( $page ) {
+			case 'add-event':
+				if (
+					'add' === $action
+					&& $event_post_type === $ce_post_type
+				) {
+					$is_page = true;
+				}
+				break;
+
+			case 'edit-event':
+				if (
+					'edit' === $action
+					&& $event_post_type === $ce_post_type
+				) {
+					$is_page = true;
+				}
+				break;
+
+			default:
+				$is_page = false;
+				break;
+		}
+
+		return $is_page;
+	}
+
+	/**
+	 * Do the output
+	 *
+	 * @return string
+	 */
 	public function display() {
 		$symbol_list = $this->symbol_list_select_options();
 
-		$symbol_position_list = $this->symbol_position_list_select_options();
-
 		// if no symbols are entered in Settings, do not display Symbol or Position on CE form
 		if ( empty( $symbol_list ) ) {
-			return false;
+			return '';
 		}
 
 		?>
@@ -263,8 +361,9 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 
 		<?php
 		// allow disabling the Before/After choice on the CE form
-		$enabled = (bool) apply_filters( 'tribe_ext_ce_cost_currency_symbol_position_enabled', true );
-		if ( ! empty( $enabled ) ) {
+		$disabled = tribe_get_option( 'tribe_ext_ce_cost_currency_symbol_position_disabled' );
+
+		if ( empty( $disabled ) ) {
 			?>
 			<table class="tribe-section-content">
 				<colgroup>
@@ -284,7 +383,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 							class="event-cost-currency-symbol-position tribe-dropdown"
 							placeholder="<?php esc_attr_e( 'Override the symbol position', 'tribe-extension' ); ?>"
 						>
-							<?php echo $symbol_position_list; ?>
+							<?php echo $this->symbol_position_list_select_options(); ?>
 						</select>
 						<p>
 							<?php _e( 'The position of the currency symbol in the cost string.', 'tribe-extension' ); ?>
@@ -298,8 +397,6 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			</table>
 			<?php
 		}
-
-		return true;
 	}
 
 }
