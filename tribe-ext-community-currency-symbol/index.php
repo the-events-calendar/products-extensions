@@ -51,6 +51,8 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		// Setup fields on the settings page
 		$setting_helper = new Tribe__Extension__Settings_Helper();
 
+		$fields = array();
+
 		// List of allowed symbols
 		$fields['tribe_ext_ce_cost_currency_symbols'] = array(
 			'type'            => 'text',
