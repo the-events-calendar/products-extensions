@@ -120,7 +120,9 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			}
 		}
 
-		if ( ! empty( (bool) $prepend_empty ) ) {
+		(bool) $prepend_empty;
+
+		if ( ! empty( $prepend_empty ) ) {
 			$symbols = array( '' => '' ) + $symbols;
 		}
 
