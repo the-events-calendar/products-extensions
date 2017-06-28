@@ -102,6 +102,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 
 		$settings = explode( '|', $setting );
 
+		/**
+		 * Filters the array of currency symbols passed to the drop-down.
+		 *
+		 * @param array $settings The original array.
+		 */
 		$settings = (array) apply_filters( 'tribe_ext_ce_cost_currency_symbol_list_array', $settings );
 
 		$symbols = array();
@@ -109,7 +114,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		foreach ( $settings as $key => $value ) {
 			$value = esc_attr( sanitize_text_field( $value ) );
 			if ( '' !== $value ) {
-				$symbols[$value] = $value;
+				$symbols[ $value ] = $value;
 			}
 		}
 
@@ -169,6 +174,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			$default_position = 'prefix';
 		}
 
+		/**
+		 * Filters the default currency position setting.
+		 *
+		 * @param string $default_position The default from the settings.
+		 */
 		$default_position = apply_filters( 'tribe_ext_ce_cost_currency_symbol_position_default', $default_position );
 
 		return sanitize_text_field( $default_position );
@@ -224,13 +234,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		$output = sprintf( '%1$s<option value=""></option>%1$s', PHP_EOL );
 
 		foreach ( $symbol_list_array as $key => $value ) {
-			$value = esc_attr( $value );
-
 			$selected = selected( $value, $current_symbol, false );
 
-			$opt_text = esc_attr_x( $value, 'Currency symbol', 'tribe-extension' );
+			$opt_text = esc_html_x( $value, 'Currency symbol', 'tribe-extension' );
 
-			$output .= sprintf( '<option value="%s" %s>%s</option>%s', $value, $selected, $opt_text, PHP_EOL );
+			$output .= sprintf( '<option value="%s" %s>%s</option>%s', esc_attr( $value ), esc_html( $selected ), $opt_text, PHP_EOL );
 		}
 
 		return $output;
@@ -250,7 +258,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			$opposite = 'prefix';
 		}
 
-		$symbol_position_list_array[$opposite] = $this->get_symbol_position_phrase( $opposite );
+		$symbol_position_list_array[ $opposite ] = $this->get_symbol_position_phrase( $opposite );
 
 		$current_position = (string) $this->get_current_symbol_position();
 
@@ -264,15 +272,11 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		$output = sprintf( '%1$s<option value=""></option>%1$s', PHP_EOL );
 
 		foreach ( $symbol_position_list_array as $key => $value ) {
-			$key = esc_attr( $key );
-
-			$value = esc_attr( $value );
-
 			$selected = selected( $key, $current_position, false );
 
 			$opt_text = esc_attr_x( $value, 'Currency symbol position', 'tribe-extension' );
 
-			$output .= sprintf( '<option value="%s" %s>%s</option>%s', $key, $selected, $opt_text, PHP_EOL );
+			$output .= sprintf( '<option value="%s" %s>%s</option>%s', esc_attr( $key ), esc_html( $selected ), $opt_text, PHP_EOL );
 		}
 
 		return $output;
@@ -342,12 +346,12 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 
 			<tr class="tribe-section-content-row">
 				<td class="tribe-section-content-label">
-					<?php tribe_community_events_field_label( 'EventCurrencySymbol', __( 'Currency Symbol:', 'tribe-extension' ) ); ?>
+					<?php tribe_community_events_field_label( 'EventCurrencySymbol', esc_html__( 'Currency Symbol:', 'tribe-extension' ) ); ?>
 				</td>
 				<td class="tribe-section-content-field">
 					<select
 						id="EventCurrencySymbol"
-						aria-label="<?php esc_html_e( 'Currency Symbol', 'tribe-extension' ); ?>"
+						aria-label="<?php esc_attr_e( 'Currency Symbol', 'tribe-extension' ); ?>"
 						name="EventCurrencySymbol"
 						class="event-cost-currency-symbol tribe-dropdown"
 						placeholder="<?php esc_attr_e( 'Select a currency symbol', 'tribe-extension' ); ?>"
@@ -373,12 +377,12 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 
 				<tr class="tribe-section-content-row">
 					<td class="tribe-section-content-label">
-						<?php tribe_community_events_field_label( 'EventCurrencyPosition', __( 'Symbol Position:', 'tribe-extension' ) ); ?>
+						<?php tribe_community_events_field_label( 'EventCurrencyPosition', esc_html__( 'Symbol Position:', 'tribe-extension' ) ); ?>
 					</td>
 					<td class="tribe-section-content-field">
 						<select
 							id="EventCurrencyPosition"
-							aria-label="<?php esc_html_e( 'Symbol Position', 'tribe-extension' ); ?>"
+							aria-label="<?php esc_attr_e( 'Symbol Position', 'tribe-extension' ); ?>"
 							name="EventCurrencyPosition"
 							class="event-cost-currency-symbol-position tribe-dropdown"
 							placeholder="<?php esc_attr_e( 'Override the symbol position', 'tribe-extension' ); ?>"
@@ -386,9 +390,9 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 							<?php echo $this->symbol_position_list_select_options(); ?>
 						</select>
 						<p>
-							<?php _e( 'The position of the currency symbol in the cost string.', 'tribe-extension' ); ?>
+							<?php esc_html_e( 'The position of the currency symbol in the cost string.', 'tribe-extension' ); ?>
 							<br>
-							<?php printf( __( 'Leave blank to use the default: %s', 'tribe-extension' ), $this->get_symbol_position_phrase( $this->get_symbol_position_default() ) ); ?>
+							<?php printf( esc_html__( 'Leave blank to use the default: %s', 'tribe-extension' ), $this->get_symbol_position_phrase( $this->get_symbol_position_default() ) ); ?>
 						</p>
 
 					</td>
