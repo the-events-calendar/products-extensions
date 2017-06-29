@@ -53,10 +53,15 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 
 		$fields = array();
 
+		$fields['tribe_ext_ce_cost_currency_title'] = array(
+			'type' => 'html',
+			'html' => '<h3>' . esc_html__( 'Event Cost Currency Extension', 'tribe-extension' ) . '</h3>',
+		);
+
 		// List of allowed symbols
 		$fields['tribe_ext_ce_cost_currency_symbols'] = array(
 			'type'            => 'text',
-			'label'           => esc_html__( 'Event Cost: Allowed Currency Symbols', 'tribe-extension' ),
+			'label'           => esc_html__( 'Allowed Symbols', 'tribe-extension' ),
 			'tooltip'         => esc_html__( 'Pipe-separated list of allowed currency symbols. (Once this option is set and saved, you will be able to pick the Default Currency Symbol for new events.) The drop-down will display these in the order you enter them. Example 1: $|€|£|Fr|¥|CNY|C$|AU$. Example 2: USD|EUR|GBP|JPY|CNY|CAD|AUD', 'tribe-extension' ),
 			'validation_type' => 'textarea',
 		);
@@ -65,7 +70,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		if ( tribe_get_option( 'tribe_ext_ce_cost_currency_symbols' ) ) {
 			$fields['tribe_ext_ce_cost_currency_symbol_default'] = array(
 				'type'            => 'dropdown',
-				'label'           => esc_html__( 'Event Cost: Default Currency Symbol', 'tribe-extension' ),
+				'label'           => esc_html__( 'Default Symbol', 'tribe-extension' ),
 				'tooltip'         => esc_html__( 'The default currency symbol for new events (does not apply when editing existing events). Leave blank to not set a default.', 'tribe-extension' ),
 				'options'         => $this->symbol_list_array( true ),
 				'validation_type' => 'options',
@@ -75,7 +80,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		// List of allowed symbols
 		$fields['tribe_ext_ce_cost_currency_symbol_position_disabled'] = array(
 			'type'            => 'checkbox_bool',
-			'label'           => esc_html__( 'Event Cost: Disallow Currency Position Selector', 'tribe-extension' ),
+			'label'           => esc_html__( 'Disallow Position Selector', 'tribe-extension' ),
 			'tooltip'         => esc_html__( 'If checked, event creators will not be able to change the currency position (before or after the cost) and your site default from the General settings tab will be used.', 'tribe-extension' ),
 			'default'         => false,
 			'validation_type' => 'boolean',
