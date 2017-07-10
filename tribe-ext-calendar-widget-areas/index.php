@@ -116,7 +116,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			array(
 				'hook'     => 'tribe_events_single_event_after_the_meta',
 				'method'   => 'single_event_after_the_meta_early',
-				'name'     => __( 'TEC Single: Below Details (Before Others)', 'tribe-extension' ),
+				'name'     => __( 'TEC Single: Below Details (Before)', 'tribe-extension' ),
 				'desc'     => __( 'Widgets in this area will be shown DIRECTLY BELOW the Single Event Details (before Related Events and Tickets, if displayed).', 'tribe-extension' ),
 				'priority' => 1,
 			),
@@ -124,7 +124,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 			array(
 				'hook'     => 'tribe_events_single_event_after_the_meta',
 				'method'   => 'single_event_after_the_meta_late',
-				'name'     => __( 'TEC Single: Below Details (After Others)', 'tribe-extension' ),
+				'name'     => __( 'TEC Single: Below Details (After)', 'tribe-extension' ),
 				'desc'     => __( 'Widgets in this area will be shown BELOW the Single Event Details (after Related Events and Tickets, if displayed).', 'tribe-extension' ),
 				'priority' => 100,
 			),
