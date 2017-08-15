@@ -57,7 +57,7 @@ class Tribe__Extension__Use_Newer_Core_JS extends Tribe__Extension {
 			return;
 		}
 
-		$plugin_dir_url = plugin_dir_url( __FILE__);
+		$plugin_dir_url = plugin_dir_url( $this->get_plugin_file() );
 
 		wp_deregister_script( 'jquery' );
 		wp_deregister_script( 'underscore' );
