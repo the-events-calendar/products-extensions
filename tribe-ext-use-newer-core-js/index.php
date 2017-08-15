@@ -38,6 +38,13 @@ class Tribe__Extension__Use_Newer_Core_JS extends Tribe__Extension {
 	 * @since 1.0.0
 	 */
 	public function init() {
+
+		global $wp_version;
+
+		if ( ! version_compare( '4.5.0', $wp_version, '>=' ) ) {
+			return;
+		}
+
 		add_action( 'admin_enqueue_scripts', array( $this, 'usurp_core_scripts' ) );
 	}
 
