@@ -376,7 +376,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		// allow disabling the Before/After choice on the CE form
 		$disabled = tribe_get_option( 'tribe_ext_ce_cost_currency_symbol_position_disabled' );
 
-		if ( empty( $disabled ) ) {
+		if ( empty( $disabled ) ) :
 			?>
 			<table class="tribe-section-content">
 				<colgroup>
@@ -408,8 +408,8 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 				</tr>
 
 			</table>
-			<?php
-		}
+		<?php
+		endif;
 	}
 
 }
