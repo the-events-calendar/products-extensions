@@ -125,7 +125,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			}
 		}
 
-		(bool) $prepend_empty;
+		$prepend_empty = (bool) $prepend_empty;
 
 		if ( ! empty( $prepend_empty ) ) {
 			$symbols = array( '' => '' ) + $symbols;
@@ -240,7 +240,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 			$current_symbol = tribe_get_option( 'tribe_ext_ce_cost_currency_symbol_default' );
 		}
 
-		$output = sprintf( '%1$s<option value=""></option>%1$s', PHP_EOL );
+		$output = PHP_EOL . '<option value=""></option>' . PHP_EOL;
 
 		foreach ( $symbol_list_array as $key => $value ) {
 			$selected = selected( $value, $current_symbol, false );
@@ -365,7 +365,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 						class="event-cost-currency-symbol tribe-dropdown"
 						placeholder="<?php esc_attr_e( 'Select a currency symbol', 'tribe-extension' ); ?>"
 					>
-						<?php echo $symbol_list; ?>
+						<?php echo $symbol_list; // Escaped upstream ?>
 					</select>
 				</td>
 			</tr>
