@@ -305,28 +305,26 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		$action          = Tribe__Utils__Array::get( $main->context, 'action' );
 		$ce_post_type    = Tribe__Utils__Array::get( $main->context, 'post_type', $event_post_type ); // assume event post type if not set
 
-		switch ( $page ) {
-			case 'add-event':
-				if (
-					'add' === $action
-					&& $event_post_type === $ce_post_type
-				) {
-					$is_page = true;
-				}
-				break;
+		// bail if we are not doing what is expected from the start
+		if ( $event_post_type !== $ce_post_type ) {
+			return false;
+		}
 
-			case 'edit-event':
-				if (
-					'edit' === $action
-					&& $event_post_type === $ce_post_type
-				) {
-					$is_page = true;
-				}
-				break;
-
-			default:
-				$is_page = false;
-				break;
+		if (
+			'edit-event' === $page
+			&& 'edit' === $action
+		) {
+			$is_page = true;
+		} elseif (
+			'add-event' === $page
+			&& (
+				'add' === $action
+				|| empty( $action )
+			)
+		) {
+			$is_page = true;
+		} else {
+			$is_page = false;
 		}
 
 		return $is_page;
