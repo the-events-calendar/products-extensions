@@ -230,9 +230,9 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		$url = $this->get_view_ticket_url( $order_id, $download_pdf );
 
 		if ( $download_pdf ) {
-			$text = __( 'Download PDF', 'tribe-extenstion' );
+			$text = __( 'Download PDF', 'tribe-extension' );
 		} else {
-			$text = __( 'View Ticket', 'tribe-extenstion' );
+			$text = __( 'View Ticket', 'tribe-extension' );
 		}
 
 		$output = sprintf(
@@ -343,7 +343,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		printf(
 			'<center><p style="text-align:center;"><a href="%1$s" class="tribe-view-ticket-link">%2$s</a></p></center>',
 			esc_attr( $url ),
-			esc_html__( 'Download a PDF copy of this ticket.', 'tribe-extenstion' )
+			esc_html__( 'Download a PDF copy of this ticket.', 'tribe-extension' )
 		);
 	}
 
