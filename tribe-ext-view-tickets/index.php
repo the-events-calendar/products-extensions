@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:     Event Tickets Plus Extension: Show and Print Tickets
- * Description:     Adds option for viewing and printing tickets, or downloading them as PDFs. In the admin area hover over an item in the Attendee List and click "View Tickets". Or, a ticket holder can view them from the frontend in their list of tickets for an event.
- * Version:         2.0.0
+ * Description:     Adds options for viewing and printing tickets, downloading them as PDFs, and/or attaching PDF tickets to ticket emails. In the admin area, hover over an item in the Attendee List and click "View Tickets". Or a ticket holder can view them from the frontend in their list of tickets for an event. PDFs must be enabled via the settings at wp-admin > Events > Settings > Tickets tab.
+ * Version:         2.1.0
  * Extension Class: Tribe__Extension__View_Print_Tickets
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -35,11 +35,28 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	public $pdf_ticket_url_key = 'tribe_pdf_ticket';
 
 	/**
-	 * Indicates if the necessary lib and setting is checked for PDF functionality
+	 * Indicates if the necessary lib and setting is checked for PDF view functionality.
 	 *
 	 * @var bool
 	 */
 	protected $pdf_export_enabled = false;
+
+	/**
+	 * Indicates if the necessary lib and setting is checked for PDF email attachments functionality.
+	 *
+	 * @var bool
+	 */
+	protected $pdf_attach_enabled = false;
+
+	/**
+	 * The PDFs to be attached to the ticket email.
+	 *
+	 * RSVPs: One PDF attachment per attendee, even in a single order.
+	 * WooCommerce: One PDF attachment per order, not per attendee (different from RSVPs).
+	 *
+	 * @var array
+	 */
+	protected $attachments_array = array();
 
 	/**
 	 * Setup the Extension's properties.
@@ -47,45 +64,57 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * This always executes even if the required plugins are not present.
 	 */
 	public function construct() {
-		$this->add_required_plugin( 'Tribe__Tickets__Main' );
-		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
+		$this->add_required_plugin( 'Tribe__Tickets__Main', '4.5.2' );
+		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.0.1' );
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/show-print-tickets/' );
-		$this->set_version( '2.0.0' );
+		$this->set_version( '2.1.0' );
 	}
 
 	/**
 	 * Extension initialization and hooks.
+	 *
+	 * PHP 5.3.7+ is required to avoid blank page content
+	 * @link https://mpdf.github.io/troubleshooting/known-issues.html
 	 */
 	public function init() {
-		if ( version_compare( PHP_VERSION, '5.3.2', '<' ) ) {
+		if ( version_compare( PHP_VERSION, '5.3.7', '<' ) ) {
 			_doing_it_wrong(
 				$this->get_name(),
-				'This Extension requires PHP 5.3.2 or newer to work. Please contact your website host and inquire about updating PHP.',
+				'This Extension requires PHP 5.3.7 or newer to work. Please contact your website host and inquire about updating PHP.',
 				'1.0.0'
 			);
+
 			return;
 		}
 
-		$dkpdf_loaded = defined( 'DKPDF_PLUGIN_DIR' );
-		$pdfs_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets', false );
+		$dkpdf_loaded        = defined( 'DKPDF_PLUGIN_DIR' );
+		$pdfs_enabled        = tribe_get_option( 'tribe_extension_enable_pdf_tickets', false );
+		$pdfs_attach_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets_attach', false );
 
 		if ( ! $dkpdf_loaded && $pdfs_enabled ) {
 			tribe_notice( 'tribe_extension_dkpdf_not_active', array( $this, 'notice_dkpdf_not_active' ) );
 		}
 
 		$this->pdf_export_enabled = ( $dkpdf_loaded && $pdfs_enabled );
+		$this->pdf_attach_enabled = ( $dkpdf_loaded && $pdfs_attach_enabled );
 
 		add_action( 'wp_loaded', array( $this, 'show_ticket_page' ) );
 		add_filter( 'woocommerce_order_actions', array( $this, 'add_woo_view_action' ) );
 		add_action( 'woocommerce_order_action_tribe_view_ticket', array( $this, 'forward_woo_action' ) );
-		add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'event_tickets_attendees_table_row_actions' ), 0, 2 );
-		add_action( 'event_tickets_orders_attendee_contents', array( $this, 'event_tickets_orders_attendee_contents' ), 10, 2 );
+		add_action( 'event_tickets_attendees_table_row_actions', array(
+			$this,
+			'event_tickets_attendees_table_row_actions'
+		), 0, 2 );
+		add_action( 'event_tickets_orders_attendee_contents', array(
+			$this,
+			'event_tickets_orders_attendee_contents'
+		), 10, 2 );
 		add_action( 'admin_init', array( $this, 'add_settings' ) );
 
-		if ( $this->pdf_export_enabled ) {
-			add_action( 'tribe_tickets_ticket_email_ticket_bottom', array( $this, 'in_ticket_pdf_link' ), 100 );
-		}
+		add_action( 'event_tickets_rsvp_attendee_created', array( $this, 'upload_pdf_rsvp' ), 50, 2 );
+		add_action( 'event_ticket_woo_attendee_created', array( $this, 'upload_pdf_woo' ), 50, 2 );
+		add_action( 'event_ticket_edd_attendee_created', array( $this, 'upload_pdf_edd' ), 50, 2 );
 	}
 
 	/**
@@ -96,11 +125,21 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		$setting_helper = new Tribe__Extension__Settings_Helper();
 
 		$fields = array(
-			'tribe_extension_enable_pdf_tickets' => array(
+			'tribe_extension_enable_pdf_tickets'        => array(
 				'type'            => 'checkbox_bool',
 				'label'           => esc_html__( 'Download PDF Tickets', 'tribe-extension' ),
 				'tooltip'         => sprintf(
-					esc_html__( 'Add a PDF download link to tickets. This feature requires that the %s plugin is installed and activated.', 'tribe-extension' ),
+					esc_html__( 'Add a PDF download link to tickets.', 'tribe-extension' ),
+					$this->dkpdf_link()
+				),
+				'default'         => false,
+				'validation_type' => 'boolean',
+			),
+			'tribe_extension_enable_pdf_tickets_attach' => array(
+				'type'            => 'checkbox_bool',
+				'label'           => esc_html__( 'Attach ticket PDFs to ticket emails', 'tribe-extension' ),
+				'tooltip'         => sprintf(
+					esc_html__( 'If checked, the PDF ticket will be attached to ticket emails.', 'tribe-extension' ),
 					$this->dkpdf_link()
 				),
 				'default'         => false,
@@ -115,6 +154,359 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		);
 	}
 
+	/**
+	 * Get the absolute path to the WordPress uploads directory,
+	 * with a trailing slash.
+	 *
+	 * It will return a path to where the WordPress /uploads/ directory is,
+	 * whether it is in the default location or whether an UPLOADS constant has
+	 * been defined to specify an alternate location. The path it returns will
+	 * look something like /path/to/wordpress/wp-content/uploads/ regardless
+	 * of the current month we are in.
+	 *
+	 * @return string The uploads directory path.
+	 */
+	protected function uploads_directory_path() {
+		$upload_dir = wp_upload_dir();
+
+		return trailingslashit( $upload_dir['basedir'] );
+	}
+
+	/**
+	 * Get the URL to the WordPress uploads directory,
+	 * with a trailing slash.
+	 *
+	 * It will return a URL to where the WordPress /uploads/ directory is,
+	 * whether it is in the default location or whether an UPLOADS constant has
+	 * been defined to specify an alternate location. The URL it returns will
+	 * look something like http://example.com/wp-content/uploads/ regardless
+	 * of the current month we are in.
+	 *
+	 * @return string The uploads directory URL.
+	 */
+	protected function uploads_directory_url() {
+		$upload_dir = wp_upload_dir();
+
+		return trailingslashit( $upload_dir['baseurl'] );
+	}
+
+	/**
+	 * PDF file name without full server path.
+	 *
+	 * Naming convention for this extension's PDFs.
+	 *
+	 * @param      $post_id     Event or other Post Type post ID
+	 * @param      $ticket_type RSVP, Woo, EDD, or other to prefix with
+	 * @param      $attendee_id Ticket Attendee ID
+	 *
+	 * @return bool|string
+	 */
+	protected function get_pdf_name( $post_id, $ticket_type, $attendee_id ) {
+		if (
+			empty( $post_id )
+			|| empty( $ticket_type )
+			|| empty( $attendee_id )
+		) {
+			return false;
+		}
+
+		$file_name = sprintf( 'et_%d_%s_%d',
+			$post_id,
+			strtolower( $ticket_type ),
+			$attendee_id
+		);
+
+		$file_name = sprintf( '%s_%s', $file_name, md5( $file_name ) );
+
+		$file_name = substr( $file_name, 0, 50 );
+
+		$file_name = apply_filters( 'tribe_ext_view_tickets_get_pdf_name', $file_name, $ticket_type, $post_id, $attendee_id );
+
+		$file_name .= '.pdf';
+
+		// remove all whitespace from file name
+		$file_name = preg_replace( '/\s+/', '', $file_name );
+
+		return $file_name;
+	}
+
+	/**
+	 * RSVPs: Creates ticket PDF and saves to WP's uploads directory.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param $attendee_id ID of attendee ticket
+	 * @param $post_id     ID of event
+	 *
+	 * @return bool
+	 */
+	public function upload_pdf_rsvp( $attendee_id, $post_id ) {
+
+		$successful = false;
+
+		if ( false === $this->pdf_attach_enabled ) {
+			return $successful;
+		}
+
+		if ( ! class_exists( 'Tribe__Tickets__RSVP' ) ) {
+			return $successful;
+		}
+
+		$ticket_instance = Tribe__Tickets__RSVP::get_instance();
+
+		if ( empty( $ticket_instance ) ) {
+			return $successful;
+		}
+
+		$attendees = $ticket_instance->get_attendees_array( $post_id );
+
+		if (
+			empty( $attendees )
+			|| ! is_array( $attendees )
+		) {
+			return $successful;
+		}
+
+		$attendees_array = array();
+
+		foreach ( $attendees as $attendee ) {
+			if ( $attendee['attendee_id'] == $attendee_id ) {
+				$attendees_array[] = $attendee;
+			}
+		}
+
+		if ( empty( $attendees_array ) ) {
+			return $successful;
+		}
+
+		$html = $ticket_instance->generate_tickets_email_content( $attendees_array );
+
+		if ( empty( $html ) ) {
+			return $successful;
+		}
+
+		$file_name = $this->uploads_directory_path() . $this->get_pdf_name( $post_id, 'rsvp', $attendee_id );
+
+		if ( empty( $file_name ) ) {
+			return $successful;
+		}
+
+		if ( file_exists( $file_name ) ) {
+			$successful = true;
+		} else {
+			$this->output_pdf( $html, $file_name );
+
+			$successful = true;
+		}
+
+		if ( true === $successful ) {
+			$this->attachments_array[] = $file_name;
+			add_filter( 'tribe_rsvp_email_attachments', array( $this, 'email_attach_pdf_rsvp' ), 10, 1 );
+		}
+
+		return $successful;
+	}
+
+	/**
+	 * RSVPs: Attach the PDF to the ticket email
+	 *
+	 * @param $attachments
+	 *
+	 * @return array
+	 */
+	public function email_attach_pdf_rsvp( $attachments ) {
+		$attachments = array_merge( $attachments, $this->attachments_array );
+
+		$attachments = array_unique( $attachments );
+
+		return $attachments;
+	}
+
+	/**
+	 * WooCommerce Tickets: Creates ticket PDF and saves to WP's uploads directory.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param $attendee_id ID of attendee ticket
+	 * @param $event_id    ID of event
+	 * @param $order       WooCommerce order
+	 * @param $product_id  WooCommerce product ID
+	 *
+	 * @return bool
+	 */
+	public function upload_pdf_woo( $attendee_id, $event_id ) {
+
+		$successful = false;
+
+		if ( false === $this->pdf_attach_enabled ) {
+			return $successful;
+		}
+
+		if ( ! class_exists( 'Tribe__Tickets_Plus__Commerce__WooCommerce__Main' ) ) {
+			return $successful;
+		}
+
+		$ticket_instance = Tribe__Tickets_Plus__Commerce__WooCommerce__Main::get_instance();
+
+		if ( empty( $ticket_instance ) ) {
+			return $successful;
+		}
+
+		$attendees = $ticket_instance->get_attendees_by_id( $attendee_id );
+
+		if (
+			empty( $attendees )
+			|| ! is_array( $attendees )
+		) {
+			return $successful;
+		}
+
+		$attendees_array = array();
+
+		foreach ( $attendees as $attendee ) {
+			if ( $attendee['attendee_id'] == $attendee_id ) {
+				$attendees_array[] = $attendee;
+			}
+		}
+
+		if ( empty( $attendees_array ) ) {
+			return $successful;
+		}
+
+		$html = $ticket_instance->generate_tickets_email_content( $attendees_array );
+
+		if ( empty( $html ) ) {
+			return $successful;
+		}
+
+		$file_name = $this->uploads_directory_path() . $this->get_pdf_name( $event_id, 'woo', $attendee_id );
+
+		if ( empty( $file_name ) ) {
+			return $successful;
+		}
+
+		if ( file_exists( $file_name ) ) {
+			$successful = true;
+		} else {
+			$this->output_pdf( $html, $file_name );
+
+			$successful = true;
+		}
+
+		if ( true === $successful ) {
+			$this->attachments_array[] = $file_name;
+			add_filter( 'woocommerce_email_attachments', array( $this, 'email_attach_pdf_woo' ), 10, 1 );
+		}
+
+		return $successful;
+	}
+
+	/**
+	 * WooCommerce Tickets: Attach the PDF to the ticket email
+	 *
+	 * @param $attachments
+	 *
+	 * @return array
+	 */
+	public function email_attach_pdf_woo( $attachments ) {
+		$attachments = array_merge( $attachments, $this->attachments_array );
+
+		$attachments = array_unique( $attachments );
+
+		return $attachments;
+	}
+
+	/**
+	 * Easy Digital Downloads Tickets: Creates ticket PDF and saves to WP's uploads directory.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param $attendee_id ID of attendee ticket
+	 * @param $event_id    ID of event
+	 *
+	 * @return bool
+	 */
+	public function upload_pdf_edd( $attendee_id, $event_id ) {
+
+		$successful = false;
+
+		if ( false === $this->pdf_attach_enabled ) {
+			return $successful;
+		}
+
+		if ( ! class_exists( 'Tribe__Tickets_Plus__Commerce__EDD__Main' ) ) {
+			return $successful;
+		}
+
+		$ticket_instance = Tribe__Tickets_Plus__Commerce__EDD__Main::get_instance();
+
+		if ( empty( $ticket_instance ) ) {
+			return $successful;
+		}
+
+		$attendees = $ticket_instance->get_attendees_by_id( $attendee_id );
+
+		if (
+			empty( $attendees )
+			|| ! is_array( $attendees )
+		) {
+			return $successful;
+		}
+
+		$attendees_array = array();
+
+		foreach ( $attendees as $attendee ) {
+			if ( $attendee['attendee_id'] == $attendee_id ) {
+				$attendees_array[] = $attendee;
+			}
+		}
+
+		if ( empty( $attendees_array ) ) {
+			return $successful;
+		}
+
+		$html = $ticket_instance->generate_tickets_email_content( $attendees_array );
+
+		if ( empty( $html ) ) {
+			return $successful;
+		}
+
+		$file_name = $this->uploads_directory_path() . $this->get_pdf_name( $event_id, 'edd', $attendee_id );
+
+		if ( empty( $file_name ) ) {
+			return $successful;
+		}
+
+		if ( file_exists( $file_name ) ) {
+			$successful = true;
+		} else {
+			$this->output_pdf( $html, $file_name );
+
+			$successful = true;
+		}
+
+		if ( true === $successful ) {
+			$this->attachments_array[] = $file_name;
+			add_filter( 'edd_ticket_receipt_attachments', array( $this, 'email_attach_pdf_edd' ), 10, 1 );
+		}
+
+		return $successful;
+	}
+
+	/**
+	 * Easy Digital Downloads Tickets: Attach the PDF to the ticket email
+	 *
+	 * @param $attachments
+	 *
+	 * @return array
+	 */
+	public function email_attach_pdf_edd( $attachments ) {
+		$attachments = array_merge( $attachments, $this->attachments_array );
+
+		$attachments = array_unique( $attachments );
+
+		return $attachments;
+	}
 
 	/**
 	 * Displays ticket order when the URL contains a view ticket action
@@ -128,16 +520,16 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		require_once( 'src/functions/general.php' );
 		require_once( 'src/Tribe/Extension/Tickets_Order_Helper2.php' );
 
-		$order_id = intval( $_GET[ $this->view_ticket_url_key ] );
-		$is_pdf_ticket = ! empty( $_GET[ $this->pdf_ticket_url_key ] );
-		$order_helper = new Tribe__Extension__Tickets_Order_Helper2( $order_id );
+		$order_id        = intval( $_GET[ $this->view_ticket_url_key ] );
+		$is_pdf_ticket   = ! empty( $_GET[ $this->pdf_ticket_url_key ] );
+		$order_helper    = new Tribe__Extension__Tickets_Order_Helper2( $order_id );
 		$ticket_provider = $order_helper->get_provider_instance();
 
 		if ( empty( $ticket_provider ) ) {
 			return;
 		}
 
-		$attendees = $order_helper->get_attendees();
+		$attendees    = $order_helper->get_attendees();
 		$holder_email = isset( $attendees[0]['purchaser_email'] ) ? $attendees[0]['purchaser_email'] : null;
 		$current_user = wp_get_current_user();
 
@@ -152,11 +544,13 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 
 		if ( $is_pdf_ticket && $this->pdf_export_enabled ) {
 			// Prevent the download PDF link from appearing inside the PDF.
-			remove_action( 'tribe_tickets_ticket_email_ticket_bottom', array( $this, 'in_ticket_pdf_link' ), 100 );
+			// TODO - remove?
+			// remove_action( 'tribe_tickets_ticket_email_ticket_bottom', array( $this, 'in_ticket_pdf_link' ), 100 );
 
 			$this->output_pdf(
 				$ticket_provider->generate_tickets_email_content( $attendees ),
-				$order_id
+				$order_id,
+				'I'
 			);
 		} else {
 			echo $ticket_provider->generate_tickets_email_content( $attendees );
@@ -203,6 +597,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 */
 	public function add_woo_view_action( $actions = array() ) {
 		$actions['tribe_view_ticket'] = esc_html__( 'View Ticket', 'tribe-extension' );
+
 		return $actions;
 	}
 
@@ -268,18 +663,26 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 
 
 	/**
-	 * Outputs downloadable PDF to browser
+	 * Outputs PDF
 	 *
-	 * @param $html
+	 * @param string $html      HTML content to be turned into PDF.
+	 * @param string $file_name Full file name, including path on server.
+	 * @param string $dest      'F' is save to local file
+	 *                          'I' sends as standard output, allowing it to be viewed in the browser
+	 *                          'D' is to force download
+	 *                          'S' is to return as a string
 	 */
-	function output_pdf( $html, $filename ) {
+	protected function output_pdf( $html, $file_name, $dest = 'F' ) {
+		if ( '.pdf' !== substr( $file_name, - 4 ) ) {
+			$file_name .= '.pdf';
+		}
+
 		// Mute mPDF's many notices.
 		@$mpdf = $this->get_mpdf( $html );
-		@$mpdf->Output( $filename . '.pdf', 'I' );
+		@$mpdf->Output( $file_name, $dest );
 
-		exit;
+		//exit; // TODO: if we have exit here, the PDF ticket to the server only does the first attendee, and so we can't have it here -- but why was it ever added?
 	}
-
 
 	/**
 	 * Converts HTML to mPDF object
@@ -288,8 +691,8 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 *
 	 * @return mPDF
 	 */
-	function get_mpdf( $html ) {
-		require_once ( DKPDF_PLUGIN_DIR . 'includes/mpdf60/mpdf.php' );
+	protected function get_mpdf( $html ) {
+		require_once( DKPDF_PLUGIN_DIR . 'includes/mpdf60/mpdf.php' );
 
 		// page orientation
 		$dkpdf_page_orientation = get_option( 'dkpdf_page_orientation', '' );
@@ -301,13 +704,13 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		}
 
 		// font size
-		$dkpdf_font_size = get_option( 'dkpdf_font_size', '12' );
+		$dkpdf_font_size   = get_option( 'dkpdf_font_size', '12' );
 		$dkpdf_font_family = '';
 
 		// margins
-		$dkpdf_margin_left = get_option( 'dkpdf_margin_left', '15' );
-		$dkpdf_margin_right = get_option( 'dkpdf_margin_right', '15' );
-		$dkpdf_margin_top = get_option( 'dkpdf_margin_top', '50' );
+		$dkpdf_margin_left   = get_option( 'dkpdf_margin_left', '15' );
+		$dkpdf_margin_right  = get_option( 'dkpdf_margin_right', '15' );
+		$dkpdf_margin_top    = get_option( 'dkpdf_margin_top', '50' );
 		$dkpdf_margin_bottom = get_option( 'dkpdf_margin_bottom', '30' );
 		$dkpdf_margin_header = get_option( 'dkpdf_margin_header', '15' );
 
@@ -325,9 +728,9 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		);
 
 		// Make full UTF-8 charset work.
-		$mpdf->useAdobeCJK = true;
+		$mpdf->useAdobeCJK      = true;
 		$mpdf->autoScriptToLang = true;
-		$mpdf->autoLangToFont = true;
+		$mpdf->autoLangToFont   = true;
 
 		$mpdf->WriteHTML( $html );
 
@@ -347,9 +750,8 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		);
 	}
 
-
 	/**
-	 * Outputs the download dkpdf notice
+	 * Outputs the download DK PDF notice
 	 */
 	public function notice_dkpdf_not_active() {
 		$message = sprintf(
@@ -371,6 +773,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * @return string
 	 */
 	protected function dkpdf_link() {
+		// TODO change to Activation link if already installed, like http://tribe.dev/wp-admin/plugin-install.php?s=DK+PDF&tab=search&type=term
 		return '<a href="plugin-install.php?tab=plugin-information&plugin=dk-pdf&TB_iframe=true" class="thickbox">DK PDF</a>';
 	}
 }
