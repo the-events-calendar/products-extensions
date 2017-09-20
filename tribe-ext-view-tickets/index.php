@@ -88,16 +88,8 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		$dkpdf_loaded        = defined( 'DKPDF_PLUGIN_DIR' );
-		$pdfs_enabled        = tribe_get_option( 'tribe_extension_enable_pdf_tickets', false );
-		$pdfs_attach_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets_attach', false );
-
-		if ( ! $dkpdf_loaded && $pdfs_enabled ) {
-			tribe_notice( 'tribe_extension_dkpdf_not_active', array( $this, 'notice_dkpdf_not_active' ) );
-		}
-
-		$this->pdf_export_enabled = ( $dkpdf_loaded && $pdfs_enabled );
-		$this->pdf_attach_enabled = ( $dkpdf_loaded && $pdfs_attach_enabled );
+		$this->pdf_export_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets', false );
+		$this->pdf_attach_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets_attach', false );
 
 		add_action( 'wp_loaded', array( $this, 'show_ticket_page' ) );
 		add_filter( 'woocommerce_order_actions', array( $this, 'add_woo_view_action' ) );
@@ -128,20 +120,14 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			'tribe_extension_enable_pdf_tickets'        => array(
 				'type'            => 'checkbox_bool',
 				'label'           => esc_html__( 'Download PDF Tickets', 'tribe-extension' ),
-				'tooltip'         => sprintf(
-					esc_html__( 'Add a PDF download link to tickets.', 'tribe-extension' ),
-					$this->dkpdf_link()
-				),
+				'tooltip'         => esc_html__( 'Add a PDF download link to tickets.', 'tribe-extension' ),
 				'default'         => false,
 				'validation_type' => 'boolean',
 			),
 			'tribe_extension_enable_pdf_tickets_attach' => array(
 				'type'            => 'checkbox_bool',
 				'label'           => esc_html__( 'Attach ticket PDFs to ticket emails', 'tribe-extension' ),
-				'tooltip'         => sprintf(
-					esc_html__( 'If checked, the PDF ticket will be attached to ticket emails.', 'tribe-extension' ),
-					$this->dkpdf_link()
-				),
+				'tooltip'         => esc_html__( 'If checked, the PDF ticket will be attached to ticket emails.', 'tribe-extension' ),
 				'default'         => false,
 				'validation_type' => 'boolean',
 			),
@@ -152,6 +138,17 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			'event-tickets',
 			'ticket-commerce-form-location'
 		);
+	}
+
+	/**
+	 *
+	 *
+	 * @return string
+	 */
+	private function mpdf_lib_dir() {
+		$path = __DIR__ . '/vendor/mpdf';
+
+		return trailingslashit( $path );
 	}
 
 	/**
@@ -667,20 +664,40 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 *
 	 * @param string $html      HTML content to be turned into PDF.
 	 * @param string $file_name Full file name, including path on server.
-	 * @param string $dest      'F' is save to local file
-	 *                          'I' sends as standard output, allowing it to be viewed in the browser
-	 *                          'D' is to force download
-	 *                          'S' is to return as a string
+	 *                          The name of the file. If not specified, the document will be sent
+	 *                          to the browser (destination I).
+	 *                          BLANK or omitted: "doc.pdf"
+	 * @param string $dest      I: send the file inline to the browser. The plug-in is used if available.
+	 *                          The name given by $filename is used when one selects the "Save as"
+	 *                          option on the link generating the PDF.
+	 *                          D: send to the browser and force a file download with the name
+	 *                          given by $filename.
+	 *                          F: save to a local file with the name given by $filename (may
+	 *                          include a path).
+	 *                          S: return the document as a string. $filename is ignored.
+	 *
+	 * @link https://mpdf.github.io/reference/mpdf-functions/output.html
 	 */
 	protected function output_pdf( $html, $file_name, $dest = 'F' ) {
+		if ( empty( $file_name ) ) {
+			$file_name = 'et_ticket_' . uniqid();
+		}
+
 		if ( '.pdf' !== substr( $file_name, - 4 ) ) {
 			$file_name .= '.pdf';
 		}
 
-		// Mute mPDF's many notices.
-		@$mpdf = $this->get_mpdf( $html );
-		@$mpdf->Output( $file_name, $dest );
+		/**
+		 * Empty the output buffer to ensure the website page's HTML is not included by accident.
+		 *
+		 * @link https://mpdf.github.io/what-else-can-i-do/capture-html-output.html
+		 * @link https://stackoverflow.com/a/35574170/893907
+		 */
+		ob_clean();
 
+		// Mute mPDF's many notices.
+		$mpdf = $this->get_mpdf( $html );
+		$mpdf->Output( $file_name, $dest );
 		//exit; // TODO: if we have exit here, the PDF ticket to the server only does the first attendee, and so we can't have it here -- but why was it ever added?
 	}
 
@@ -692,39 +709,21 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * @return mPDF
 	 */
 	protected function get_mpdf( $html ) {
-		require_once( DKPDF_PLUGIN_DIR . 'includes/mpdf60/mpdf.php' );
+		require_once( $this->mpdf_lib_dir() . 'mpdf.php' );
 
-		// page orientation
-		$dkpdf_page_orientation = get_option( 'dkpdf_page_orientation', '' );
 
-		$format = apply_filters( 'dkpdf_pdf_format', 'A4' );
-
-		if ( 'horizontal' === $dkpdf_page_orientation ) {
-			$format .= '-L';
-		}
-
-		// font size
-		$dkpdf_font_size   = get_option( 'dkpdf_font_size', '12' );
-		$dkpdf_font_family = '';
-
-		// margins
-		$dkpdf_margin_left   = get_option( 'dkpdf_margin_left', '15' );
-		$dkpdf_margin_right  = get_option( 'dkpdf_margin_right', '15' );
-		$dkpdf_margin_top    = get_option( 'dkpdf_margin_top', '50' );
-		$dkpdf_margin_bottom = get_option( 'dkpdf_margin_bottom', '30' );
-		$dkpdf_margin_header = get_option( 'dkpdf_margin_header', '15' );
-
-		// creating and setting the pdf
+		/**
+		 * Creating and setting the PDF
+		 *
+		 * Reference vendor/mpdf/config.php, especially since it may not match the documentation.
+		 *
+		 * @link https://mpdf.github.io/reference/mpdf-variables/overview.html
+		 * @link https://github.com/mpdf/mpdf/pull/490
+		 */
 		$mpdf = new mPDF(
-			'utf-8',
-			$format,
-			$dkpdf_font_size,
-			$dkpdf_font_family,
-			$dkpdf_margin_left,
-			$dkpdf_margin_right,
-			$dkpdf_margin_top,
-			$dkpdf_margin_bottom,
-			$dkpdf_margin_header
+			'UTF-8',
+			'LETTER', // default is A4
+			'12' // I think default is 9
 		);
 
 		// Make full UTF-8 charset work.
@@ -750,30 +749,4 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		);
 	}
 
-	/**
-	 * Outputs the download DK PDF notice
-	 */
-	public function notice_dkpdf_not_active() {
-		$message = sprintf(
-			esc_html__( 'The Download PDF feature requires that the %s plugin is downloaded and activated.', 'tribe-extension' ),
-			$this->dkpdf_link()
-		);
-
-		printf(
-			'<div class="error"><p><strong>%1$s</strong> %2$s</p></div>',
-			$this->get_name(),
-			$message
-		);
-	}
-
-
-	/**
-	 * Gets an HTML link to dkpdf plugin download page
-	 *
-	 * @return string
-	 */
-	protected function dkpdf_link() {
-		// TODO change to Activation link if already installed, like http://tribe.dev/wp-admin/plugin-install.php?s=DK+PDF&tab=search&type=term
-		return '<a href="plugin-install.php?tab=plugin-information&plugin=dk-pdf&TB_iframe=true" class="thickbox">DK PDF</a>';
-	}
 }
