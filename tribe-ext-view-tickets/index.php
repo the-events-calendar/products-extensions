@@ -745,7 +745,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		$url = $this->get_current_page_url();
+		$url = strtolower( $this->get_current_page_url() );
 
 		$guessed_attendee_id = $this->get_attendee_id_from_attempted_url( $url );
 
@@ -753,17 +753,31 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		// if we got this far, let's do what we came to do
-		$pdf_success = $this->do_upload_pdf( $guessed_attendee_id );
+		$query_key = 'et_ticket_created';
 
-		if ( ! empty( $pdf_success ) ) {
-			$url = add_query_arg( 'retry', time(), $url ); // cache buster and technically a new URL so status code 307 applies
-			/**
-			 * @link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
-			 */
-			wp_redirect( esc_url( $url ), 307 ); // 307: Temporary Redirect
-			exit;
+		if ( isset ( $_GET[ $query_key ] ) ) {
+			$already_retried = true;
+		} else {
+			$already_retried = false;
 		}
+
+		if ( true === $already_retried ) {
+			return;
+		}
+
+		// if we got this far, we probably guessed correctly so let's generate the PDF
+		$this->do_upload_pdf( $guessed_attendee_id );
+
+		/**
+		 * Redirect to retrying reloading the PDF
+		 *
+		 * Cache buster and technically a new URL so status code 307 Temporary Redirect applies
+		 *
+		 * @link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
+		 */
+		$url = add_query_arg( $query_key, time() );
+		wp_redirect( $url, 307 );
+		exit;
 	}
 
 }
