@@ -664,16 +664,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		 * @link https://mpdf.github.io/reference/mpdf-variables/overview.html
 		 * @link https://github.com/mpdf/mpdf/pull/490
 		 */
-		$mpdf = new mPDF(
-			'UTF-8',
-			'LETTER', // default is A4
-			'12' // I think default is 9
-		);
-
-		// Make full UTF-8 charset work.
-		$mpdf->useAdobeCJK      = true;
-		$mpdf->autoScriptToLang = true;
-		$mpdf->autoLangToFont   = true;
+		$mpdf = new mPDF( 'c' ); // 'c' sets the mPDF Mode to use onlyCoreFonts so that we do not need to include any fonts (like the dejavu... ones) in vendor/mpdf/ttfontdata
 
 		$mpdf->WriteHTML( $html );
 
