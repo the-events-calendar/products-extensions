@@ -21,34 +21,6 @@ if ( ! class_exists( 'Tribe__Extension' ) ) {
 class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 
 	/**
-	 * URL key for specifying a order number
-	 *
-	 * @var string
-	 */
-	public $view_ticket_url_key = 'tribe_view_ticket_order';
-
-	/**
-	 * URL key for specifying a order number
-	 *
-	 * @var string
-	 */
-	public $pdf_ticket_url_key = 'tribe_pdf_ticket';
-
-	/**
-	 * Indicates if the necessary lib and setting is checked for PDF view functionality.
-	 *
-	 * @var bool
-	 */
-	protected $pdf_export_enabled = false;
-
-	/**
-	 * Indicates if the necessary lib and setting is checked for PDF email attachments functionality.
-	 *
-	 * @var bool
-	 */
-	protected $pdf_attach_enabled = false;
-
-	/**
 	 * The PDFs to be attached to the ticket email.
 	 *
 	 * RSVPs: One PDF attachment per attendee, even in a single order.
@@ -88,60 +60,21 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		$this->pdf_export_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets', false );
-		$this->pdf_attach_enabled = tribe_get_option( 'tribe_extension_enable_pdf_tickets_attach', false );
-
-		// TODO: remove? add_action( 'wp_loaded', array( $this, 'show_ticket_page' ) );
-
-		// TODO generate the PDF if it does not yet exist
-		add_action( 'template_redirect', array( $this, 'if_pdf_url_404_upload_pdf_then_reload' ) );
-
-		add_filter( 'woocommerce_order_actions', array( $this, 'add_woo_view_action' ) );
-		add_action( 'woocommerce_order_action_tribe_view_ticket', array( $this, 'forward_woo_action' ) );
 		add_action( 'event_tickets_attendees_table_row_actions', array(
 			$this,
-			'event_tickets_attendees_table_row_actions'
+			'pdf_attendee_table_row_actions'
 		), 0, 2 );
+
 		add_action( 'event_tickets_orders_attendee_contents', array(
 			$this,
-			'event_tickets_orders_attendee_contents'
+			'pdf_attendee_table_row_action_contents'
 		), 10, 2 );
-		add_action( 'admin_init', array( $this, 'add_settings' ) );
 
 		add_action( 'event_tickets_rsvp_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 		add_action( 'event_ticket_woo_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 		add_action( 'event_ticket_edd_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
-	}
 
-	/**
-	 * Adds settings options
-	 */
-	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Extension/Settings_Helper.php';
-		$setting_helper = new Tribe__Extension__Settings_Helper();
-
-		$fields = array(
-			'tribe_extension_enable_pdf_tickets'        => array(
-				'type'            => 'checkbox_bool',
-				'label'           => esc_html__( 'Download PDF Tickets', 'tribe-extension' ),
-				'tooltip'         => esc_html__( 'Add a PDF download link to tickets.', 'tribe-extension' ),
-				'default'         => false,
-				'validation_type' => 'boolean',
-			),
-			'tribe_extension_enable_pdf_tickets_attach' => array(
-				'type'            => 'checkbox_bool',
-				'label'           => esc_html__( 'Attach ticket PDFs to ticket emails', 'tribe-extension' ),
-				'tooltip'         => esc_html__( 'If checked, the PDF ticket will be attached to ticket emails.', 'tribe-extension' ),
-				'default'         => false,
-				'validation_type' => 'boolean',
-			),
-		);
-
-		$setting_helper->add_fields(
-			$fields,
-			'event-tickets',
-			'ticket-commerce-form-location'
-		);
+		add_action( 'template_redirect', array( $this, 'if_pdf_url_404_upload_pdf_then_reload' ) );
 	}
 
 	/**
@@ -210,7 +143,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		}
 	}
 
-	// runs 4 times per attendee
+	// TODO: runs 4 times per attendee
 	protected function get_event_meta_key_from_attendee_id( $attendee_id ) {
 		$attendee_id = absint( $attendee_id );
 
@@ -239,7 +172,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			 *   _tribe_wooticket_event
 			 *   _tribe_eddticket_event
 			 *
-			 * TODO: Could be enhanced to support ATTENDEE_EVENT_KEY, but that would be really edge case.
+			 * Could be enhanced to support ATTENDEE_EVENT_KEY, but that would be really edge case.
 			 */
 			$ends_in_event = $this->string_ends_with( $key, '_event' );
 
@@ -364,8 +297,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 
 	public function get_pdf_url( $attendee_id ) {
 		return $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id );
-
-		// TODO: maybe ajax create PDF by adding a query parameter if the file does not yet exist -- so we only trigger trying to create a PDF that does not yet exist
 	}
 
 	/**
@@ -381,10 +312,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	public function do_upload_pdf( $attendee_id, $email = true ) {
 
 		$successful = false;
-
-		if ( false === $this->pdf_attach_enabled ) {
-			return $successful;
-		}
 
 		$ticket_provider_slug = $this->get_ticket_provider_slug_from_attendee_id( $attendee_id );
 
@@ -479,59 +406,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		return $attachments;
 	}
 
-
-	/**
-	 * Displays ticket order when the URL contains a view ticket action
-	 */
-	/*	public function show_ticket_page() {
-			if ( ! isset( $_GET[ $this->view_ticket_url_key ] ) ) {
-				return;
-			}
-
-			// Include the class and functions that power this.
-			require_once( 'src/functions/general.php' );
-			require_once( 'src/Tribe/Extension/Tickets_Order_Helper2.php' );
-
-			$order_id        = intval( $_GET[ $this->view_ticket_url_key ] );
-			$is_pdf_ticket   = ! empty( $_GET[ $this->pdf_ticket_url_key ] );
-			$order_helper    = new Tribe__Extension__Tickets_Order_Helper2( $order_id );
-			$ticket_provider = $order_helper->get_provider_instance();
-
-			if ( empty( $ticket_provider ) ) {
-				return;
-			}
-
-			$attendees    = $order_helper->get_attendees();
-			$holder_email = isset( $attendees[0]['purchaser_email'] ) ? $attendees[0]['purchaser_email'] : null;
-			$current_user = wp_get_current_user();
-
-			// Stop users from viewing tickets unless they're admins or purchased them.
-			if ( ! current_user_can( 'edit_others_tribe_events' ) && $holder_email !== $current_user->user_email ) {
-				return;
-			}
-
-			if ( empty( $attendees ) ) {
-				return;
-			}
-
-			if ( $is_pdf_ticket && $this->pdf_export_enabled ) {
-				// Prevent the download PDF link from appearing inside the PDF.
-				// TODO - remove?
-				// remove_action( 'tribe_tickets_ticket_email_ticket_bottom', array( $this, 'in_ticket_pdf_link' ), 100 );
-
-				$this->output_pdf(
-					$ticket_provider->generate_tickets_email_content( $attendees ),
-					$order_id,
-					'I'
-				);
-			} else {
-				echo $ticket_provider->generate_tickets_email_content( $attendees );
-			}
-
-			exit;
-		}*/
-
-
 	/**
 	 * Get a link to the ticket view
 	 *
@@ -566,8 +440,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 *
 	 * @see event_tickets_orders_attendee_contents
 	 */
-	public function event_tickets_orders_attendee_contents( $attendee ) {
-		// TODO if PDF not enabled, we should not hook these in the first place
+	public function pdf_attendee_table_row_action_contents( $attendee ) {
 		echo $this->ticket_link( $attendee['attendee_id'] );
 	}
 
@@ -577,42 +450,21 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 *
 	 * @see event_tickets_attendees_table_row_actions
 	 */
-	public function event_tickets_attendees_table_row_actions( $actions, $item ) {
+	public function pdf_attendee_table_row_actions( $actions, $item ) {
 		$actions[] = $this->ticket_link( $item['attendee_id'] );
 
 		return $actions;
 	}
 
 	/**
-	 * Adds View tickets link to Woo Order Actions
-	 *
-	 * @see woocommerce_order_actions
-	 */
-	public function add_woo_view_action( $actions = array() ) {
-		$actions['tribe_view_ticket'] = esc_html__( 'PDF Ticket', 'tribe-extension' );
-
-		return $actions;
-	}
-
-	/**
-	 * Forwards user to view tickets page on Woo's View Tickets order action
-	 *
-	 * @param $order string The ID of the Woo order
-	 */
-	public function forward_woo_action( $order ) {
-		wp_redirect( $this->get_view_ticket_url( $order->id ) );
-		exit;
-	}
-
-	/**
 	 * Outputs PDF
 	 *
-	 * @param string $html      HTML content to be turned into PDF.
+	 * @param string $html HTML content to be turned into PDF.
 	 * @param string $file_name Full file name, including path on server.
 	 *                          The name of the file. If not specified, the document will be sent
 	 *                          to the browser (destination I).
 	 *                          BLANK or omitted: "doc.pdf"
-	 * @param string $dest      I: send the file inline to the browser. The plug-in is used if available.
+	 * @param string $dest I: send the file inline to the browser. The plug-in is used if available.
 	 *                          The name given by $filename is used when one selects the "Save as"
 	 *                          option on the link generating the PDF.
 	 *                          D: send to the browser and force a file download with the name
@@ -643,7 +495,6 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		// Mute mPDF's many notices.
 		$mpdf = $this->get_mpdf( $html );
 		$mpdf->Output( $file_name, $dest );
-		//exit; // TODO: if we have exit here, the PDF ticket to the server only does the first attendee, and so we can't have it here -- but why was it ever added?
 	}
 
 	/**
