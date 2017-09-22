@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:     Event Tickets Plus Extension: Show and Print Tickets
- * Description:     Adds options for viewing and printing tickets, downloading them as PDFs, and/or attaching PDF tickets to ticket emails. In the admin area, hover over an item in the Attendee List and click "View Tickets". Or a ticket holder can view them from the frontend in their list of tickets for an event. PDFs must be enabled via the settings at wp-admin > Events > Settings > Tickets tab.
- * Version:         2.1.0
- * Extension Class: Tribe__Extension__View_Print_Tickets
+ * Plugin Name:     Event Tickets Extension: PDF Tickets
+ * Description:     When this extension plugin is active, Event Tickets (RSVP) and Event Tickets Plus (WooCommerce and EDD) tickets will be turned into PDFs, saved to your Uploads directory but not added to your Media Library, and attached to the outgoing ticket emails. Each attendee's ticket will be a separate PDF attachment in the single email. The Attendees Report Table will have a link to each PDF Ticket, allowing you to view any ticket in PDF format. Attendees will be able to obtain a PDF copy of their ticket by viewing each event's "View your Tickets" link. This extension has no wp-admin settings to configure. If you want PDF Tickets functionality disabled, deactivate this plugin.
+ * Version:         1.0.0
+ * Extension Class: Tribe__Extension__PDF_Tickets
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
  * License:         GPLv2 or later
@@ -18,8 +18,13 @@ if ( ! class_exists( 'Tribe__Extension' ) ) {
 /**
  * Extension main class, class begins loading on init() function.
  */
-class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
+class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
+	// TODO: check public, private, protected
+	// TODO: docblocks
+	// TODO: sanity to the order of methods
+	// TODO: add header/footer content via filter (image, raw HTML, or just plain text) -- see Ticket Image in the email
+	// TODO: add filters to disable per ticket type (RSVP, Woo, EDD)
 	/**
 	 * The PDFs to be attached to the ticket email.
 	 *
@@ -37,10 +42,13 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 */
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Tickets__Main', '4.5.2' );
+
+		// TODO: only if ET+ is active
 		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.0.1' );
 
-		$this->set_url( 'https://theeventscalendar.com/extensions/show-print-tickets/' );
-		$this->set_version( '2.1.0' );
+		// TODO: support for Community Tickets Attendees Table
+
+		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' ); // TODO: Write article
 	}
 
 	/**
@@ -70,11 +78,25 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			'pdf_attendee_table_row_action_contents'
 		), 10, 2 );
 
-		add_action( 'event_tickets_rsvp_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
-		add_action( 'event_ticket_woo_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
-		add_action( 'event_ticket_edd_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
+		add_action( 'event_tickets_rsvp_attendee_created', array(
+			$this,
+			'do_upload_pdf'
+		), 50, 1 );
 
-		add_action( 'template_redirect', array( $this, 'if_pdf_url_404_upload_pdf_then_reload' ) );
+		add_action( 'event_ticket_woo_attendee_created', array(
+			$this,
+			'do_upload_pdf'
+		), 50, 1 );
+
+		add_action( 'event_ticket_edd_attendee_created', array(
+			$this,
+			'do_upload_pdf'
+		), 50, 1 );
+
+		add_action( 'template_redirect', array(
+			$this,
+			'if_pdf_url_404_upload_pdf_then_reload'
+		) );
 	}
 
 	/**
@@ -281,7 +303,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		$file_name = substr( $file_name, 0, 50 );
 
 		// This filter is available if you decide you must use it, but note that some functionality may be lost if you utilize it.
-		$file_name = apply_filters( 'tribe_ext_view_tickets_get_pdf_name', $file_name, $event_id, $ticket_provider_slug, $attendee_id );
+		$file_name = apply_filters( 'event_tickets_pdf_tickets_get_pdf_name', $file_name, $event_id, $ticket_provider_slug, $attendee_id );
 
 		$file_name .= '.pdf';
 
@@ -366,6 +388,8 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 			$successful = true;
 		}
 
+		// TODO: do_action hook -- like maybe to add to media library if desired?
+
 		if (
 			true === $successful
 			&& true === $email
@@ -407,14 +431,14 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get a link to the ticket view
+	 * Create the HTML link to the PDF Ticket file.
 	 *
-	 * @return string The HTML link element
+	 * @return string The HTML code
 	 */
 	public function ticket_link( $attendee_id ) {
 		$text = __( 'PDF Ticket', 'tribe-extension' );
 
-		$target = apply_filters( 'tribe_ext_view_tickets_link_target', '_blank' );
+		$target = apply_filters( 'event_tickets_pdf_tickets_link_target', '_blank' );
 
 		$output = sprintf(
 			'<a href="%s"',
@@ -436,7 +460,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Add ticket link to front end My Tickets page
+	 * Add ticket link to front-end "View your Tickets" page
 	 *
 	 * @see event_tickets_orders_attendee_contents
 	 */
@@ -446,7 +470,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 
 
 	/**
-	 * Adds view ticket link to backend Attendee List
+	 * Adds view ticket link to wp-admin Attendee List
 	 *
 	 * @see event_tickets_attendees_table_row_actions
 	 */
@@ -459,12 +483,12 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	/**
 	 * Outputs PDF
 	 *
-	 * @param string $html HTML content to be turned into PDF.
+	 * @param string $html      HTML content to be turned into PDF.
 	 * @param string $file_name Full file name, including path on server.
 	 *                          The name of the file. If not specified, the document will be sent
 	 *                          to the browser (destination I).
 	 *                          BLANK or omitted: "doc.pdf"
-	 * @param string $dest I: send the file inline to the browser. The plug-in is used if available.
+	 * @param string $dest      I: send the file inline to the browser. The plug-in is used if available.
 	 *                          The name given by $filename is used when one selects the "Save as"
 	 *                          option on the link generating the PDF.
 	 *                          D: send to the browser and force a file download with the name
