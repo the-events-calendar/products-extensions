@@ -48,7 +48,7 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 		$this->add_required_plugin( 'Tribe__Tickets__Main' );
 		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
 
-		$this->set_url( 'https://theeventscalendar.com/extensions/select-ticket-providers' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/select-which-ticket-types-display-ticket-editor/' );
 	}
 
 	/**
