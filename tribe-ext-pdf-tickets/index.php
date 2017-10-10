@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     Event Tickets Extension: PDF Tickets
- * Description:     When this extension plugin is active, Event Tickets (RSVP) and Event Tickets Plus (WooCommerce and Easy Digital Downloads) tickets will be turned into PDFs, saved to your Uploads directory (but not added to your Media Library), and attached to the outgoing ticket emails. Each attendee's ticket will be a separate PDF attachment to the single order email. The wp-admin Attendees Report Table will have a link to each PDF Ticket, allowing you to view any ticket in PDF format. The same will appear in an event's Community Events Tickets Attendees Report Table if you have that add-on activated as well. Attendees will be able to self-service and obtain a PDF copy of their ticket by viewing each event's "View your Tickets" link. This extension has no wp-admin settings to configure; deactivate this plugin if you want PDF Tickets functionality disabled.
+ * Description:     When this extension is active, Event Tickets (RSVP) and Event Tickets Plus (WooCommerce and Easy Digital Downloads) attendee tickets will be turned into PDFs, saved to your Uploads directory (but not added to your Media Library), and attached to the ticket email. Each attendee's ticket will be a separate PDF attachment to the single ticket email. The wp-admin Attendees Report Table (as well as the Community Events Tickets one, if applicable) will have a link to each PDF Ticket, allowing you to view any attendee's ticket in PDF format. Attendees will be able to self-service and obtain a PDF copy of their ticket by viewing each event's "View your Tickets" link. This extension has no wp-admin settings to configure; deactivate this plugin if you want PDF Tickets functionality disabled.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__PDF_Tickets
  * Author:          Modern Tribe, Inc.
@@ -20,11 +20,6 @@ if ( ! class_exists( 'Tribe__Extension' ) ) {
  */
 class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
-	// TODO: check public, private, protected
-	// TODO: docblocks
-	// TODO: sanity to the order of methods
-	// TODO: add action hook after email gets sent or PDF gets generated on the fly to allow for deleting PDFs
-	// TODO: test with month upload folders enabled
 	/**
 	 * An array of the absolute file paths of the PDF(s) to be attached
 	 * to the ticket email.
@@ -36,26 +31,55 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	protected $attachments_array = array();
 
 	/**
+	 * The attendee ticket's event meta key. Stored for performance reasons.
+	 *
+	 * Should be one of these 3: _tribe_rsvp_event, _tribe_wooticket_event,
+	 * _tribe_eddticket_event.
+	 *
+	 * @see Tribe__Extension__PDF_Tickets::get_event_meta_key_from_attendee_id()
+	 *
+	 * @var string
+	 */
+	protected $event_meta_key = '';
+
+	/**
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
+	 *
+	 * @see Tribe__Extension__PDF_Tickets::string_starts_with()
 	 */
 	public function construct() {
 		// Always require ET 4.5.2+
 		$this->add_required_plugin( 'Tribe__Tickets__Main', '4.5.2' );
 
-		// if Event Tickets Plus, require 4.5.0.1+
-		if ( class_exists( 'Tribe__Tickets_Plus__Main' ) ) {
-			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.0.1' );
+		// Get our active plugins and remove all slashes (Unix and Windows).
+		$active_plugins_option = get_option( 'active_plugins' );
+		$active_plugins        = array();
+		foreach ( $active_plugins_option as $value ) {
+			if (
+				$this->string_starts_with( $value, 'event-tickets' )
+				|| $this->string_starts_with( $value, 'the-events-calendar' )
+			) {
+				$value            = str_replace( '/', '', $value );
+				$value            = str_replace( '\\', '', $value );
+				$active_plugins[] = $value;
+			}
+		}
+
+		// if Event Tickets Plus, require 4.5.6+
+		if ( in_array( 'event-tickets-plusevent-tickets-plus.php',
+			$active_plugins ) ) {
+			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
 
 			// if Community Events Tickets (only possible with Event Tickets Plus), require 4.4.3+
-			if ( class_exists( 'Tribe__Events__Community__Tickets__Main' ) ) {
+			if ( in_array( 'the-events-calendar-community-events-ticketsevents-community-tickets.php', $active_plugins ) ) {
 				$this->add_required_plugin( 'Tribe__Events__Community__Tickets__Main', '4.4.3' );
 			}
 
 		}
 
-		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' ); // TODO: Write article
+		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' );
 	}
 
 	/**
@@ -143,8 +167,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the URL to the WordPress uploads directory,
-	 * with a trailing slash.
+	 * Get the URL to the WordPress uploads directory, with a trailing slash.
 	 *
 	 * It will return a URL to where the WordPress /uploads/ directory is,
 	 * whether it is in the default location or whether a constant has been
@@ -169,7 +192,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @return bool
 	 */
-	protected function string_starts_with( $full, $start ) {
+	private function string_starts_with( $full, $start ) {
 		$string_position = strpos( $full, $start );
 		if ( 0 === $string_position ) {
 			return true;
@@ -186,7 +209,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @return bool
 	 */
-	protected function string_ends_with( $full, $end ) {
+	private function string_ends_with( $full, $end ) {
 		$comparison = substr_compare( $full, $end, strlen( $full ) - strlen( $end ), strlen( $end ) );
 		if ( 0 === $comparison ) {
 			return true;
@@ -194,8 +217,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return false;
 		}
 	}
-
-	// TODO: runs 4 times per attendee
 
 	/**
 	 * Determine the ticket type from the Attendee ID's custom field keys.
@@ -208,12 +229,17 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @param $attendee_id
 	 *
-	 * @return bool|int|string If string, should be one of these 3:
-	 *                         _tribe_rsvp_event
-	 *                         _tribe_wooticket_event
-	 *                         _tribe_eddticket_event
+	 * @return bool|string If string, should be one of these 3:
+	 *                     _tribe_rsvp_event
+	 *                     _tribe_wooticket_event
+	 *                     _tribe_eddticket_event
 	 */
 	protected function get_event_meta_key_from_attendee_id( $attendee_id ) {
+		// Since this runs many times, store for performance reasons.
+		if ( ! empty( $this->event_meta_key ) ) {
+			return $this->event_meta_key;
+		}
+
 		$attendee_id = absint( $attendee_id );
 
 		if ( 0 >= $attendee_id ) {
@@ -254,7 +280,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return false;
 		}
 
-		return $event_key;
+		$this->event_meta_key = $event_key;
+
+		return $this->event_meta_key;
 	}
 
 	/**
@@ -350,7 +378,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * Naming convention for this extension's PDFs.
 	 *
-	 * @param $attendee_id Ticket Attendee ID
+	 * @param $attendee_id Ticket Attendee ID.
 	 *
 	 * @return bool|string
 	 */
@@ -370,14 +398,13 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 		$file_name = substr( $file_name, 0, 50 );
 
-		// This filter is available if you decide you must use it, but note that some functionality may be lost if you utilize it.
 		/**
 		 * Filter to customize the file name of the generated PDF.
 		 *
 		 * Note that it also affects the lookup of existing PDF files (and
 		 * guessing an Attendee's ID by assuming it is wrapped in double-
 		 * underscores) so use at your own risk knowing that it is
-		 * recommended to not use this filter if this is at all possible.
+		 * recommended to not use this filter.
 		 *
 		 * @var $file_name
 		 * @var $event_id
@@ -403,20 +430,21 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @return string
 	 */
-	public function get_pdf_path( $attendee_id ) {
+	private function get_pdf_path( $attendee_id ) {
 		return $this->uploads_directory_path() . $this->get_pdf_name( $attendee_id );
 	}
 
 	/**
 	 * Get the full URL to the PDF file, inclusive of .pdf at the end.
 	 *
+	 * @see Tribe__Extension__PDF_Tickets::uploads_directory_url()
 	 * @see Tribe__Extension__PDF_Tickets::get_pdf_name()
 	 *
 	 * @param $attendee_id
 	 *
 	 * @return string
 	 */
-	public function get_pdf_url( $attendee_id ) {
+	private function get_pdf_url( $attendee_id ) {
 		return $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id );
 	}
 
@@ -435,8 +463,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @see Tribe__Extension__PDF_Tickets::get_pdf_path()
 	 * @see Tribe__Extension__PDF_Tickets::output_pdf()
 	 *
-	 * @param      $attendee_id ID of attendee ticket
-	 * @param bool $email       Add PDF to email attachments array
+	 * @param      $attendee_id ID of attendee ticket.
+	 * @param bool $email       Add PDF to email attachments array.
 	 *
 	 * @return bool
 	 */
@@ -507,7 +535,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		/**
 		 * Action hook after the PDF ticket gets created.
 		 *
-		 * Might be useful if you want the PDF file added to the Media Library via wp_insert_attachment(), for example.
+		 * Might be useful if you want the PDF file added to the Media Library
+		 * via wp_insert_attachment(), for example.
 		 *
 		 * @var $event_id
 		 * @var $attendee_id
@@ -517,8 +546,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		do_action( 'tribe_ext_pdf_tickets_uploaded_pdf', $event_id, $attendee_id, $ticket_provider_slug, $file_name );
 
 		/**
-		 * Filter to disable PDF email attachments, either entirely (just pass false)
-		 * or per event, attendee, ticket type, or some other logic.
+		 * Filter to disable PDF email attachments, either entirely (just pass
+		 * false) or per event, attendee, ticket type, or some other logic.
 		 *
 		 * @var $email
 		 * @var $event_id
@@ -540,10 +569,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 					'email_attach_pdf'
 				) );
 			} elseif ( 'woo' === $ticket_provider_slug ) {
-				// TODO: ticket attachments are getting added to Your Tickets, Order Receipt, and Admin Notification emails -- likely only want it attached to the Your Tickets email -- didn't fully test the other two.
-				add_filter( 'woocommerce_email_attachments', array(
+				add_filter( 'wootickets_ticket_email_attachments', array(
 					$this,
-					'email_attach_pdf'
+					'email_attach_pdf',
 				) );
 			} elseif ( 'edd' === $ticket_provider_slug ) {
 				add_filter( 'edd_ticket_receipt_attachments', array(
@@ -586,7 +614,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @return string
 	 */
-	public function ticket_link( $attendee_id ) {
+	protected function ticket_link( $attendee_id ) {
 		$text = __( 'PDF Ticket', 'tribe-extension' );
 
 		$target = apply_filters( 'tribe_ext_pdf_tickets_link_target', '_blank' );
@@ -635,26 +663,30 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Outputs PDF
+	 * Outputs PDF.
 	 *
 	 * @see  Tribe__Extension__PDF_Tickets::get_mpdf()
 	 * @see  mPDF::Output()
 	 *
-	 * @param string $html HTML content to be turned into PDF.
-	 * @param string $file_name Full file name, including path on server.
-	 *                          The name of the file. If not specified, the document will be sent
-	 *                          to the browser (destination I).
-	 *                          BLANK or omitted: "doc.pdf"
-	 * @param string $dest I: send the file inline to the browser. The plug-in is used if available.
-	 *                          The name given by $filename is used when one selects the "Save as"
-	 *                          option on the link generating the PDF.
-	 *                          D: send to the browser and force a file download with the name
-	 *                          given by $filename.
-	 *                          F: save to a local file with the name given by $filename (may
-	 *                          include a path).
-	 *                          S: return the document as a string. $filename is ignored.
-	 *
 	 * @link https://mpdf.github.io/reference/mpdf-functions/output.html
+	 *
+	 * @param string $html      HTML content to be turned into PDF.
+	 * @param string $file_name Full file name, including path on server.
+	 *                          The name of the file. If not specified, the
+	 *                          document will be sent to the browser
+	 *                          (destination I).
+	 *                          BLANK or omitted: "doc.pdf"
+	 * @param string $dest      I: send the file inline to the browser. The
+	 *                          plug-in is used if available.
+	 *                          The name given by $filename is used when one
+	 *                          selects the "Save as" option on the link
+	 *                          generating the PDF.
+	 *                          D: send to the browser and force a file
+	 *                          download with the name given by $filename.
+	 *                          F: save to a local file with the name given by
+	 *                          $filename (may include a path).
+	 *                          S: return the document as a string.
+	 *                          $filename is ignored.
 	 */
 	protected function output_pdf( $html, $file_name, $dest = 'F' ) {
 		// Should not happen but a fail-safe
@@ -668,7 +700,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		}
 
 		/**
-		 * Empty the output buffer to ensure the website page's HTML is not included by accident.
+		 * Empty the output buffer to ensure the website page's HTML is not
+		 * included by accident.
 		 *
 		 * @link https://mpdf.github.io/what-else-can-i-do/capture-html-output.html
 		 * @link https://stackoverflow.com/a/35574170/893907
@@ -680,12 +713,12 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Converts HTML to mPDF object
+	 * Converts HTML to mPDF object.
 	 *
 	 * @see Tribe__Extension__PDF_Tickets::mpdf_lib_dir()
 	 * @see mPDF::WriteHTML()
 	 *
-	 * @param string $html The full HTML you want converted to a PDF
+	 * @param string $html The full HTML you want converted to a PDF.
 	 *
 	 * @return mPDF
 	 */
@@ -712,7 +745,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the current URL
+	 * Get the full, current URL.
 	 *
 	 * @link https://css-tricks.com/snippets/php/get-current-page-url/
 	 *
@@ -782,7 +815,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return 0;
 		}
 
-		return $guessed_attendee_id; // hopefully we were right!
+		// hopefully we were right!
+		return $guessed_attendee_id;
 	}
 
 	/**
@@ -827,9 +861,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$this->do_upload_pdf( $guessed_attendee_id, false );
 
 		/**
-		 * Redirect to retrying reloading the PDF
+		 * Redirect to retrying reloading the PDF.
 		 *
-		 * Cache buster and technically a new URL so status code 307 Temporary Redirect applies
+		 * Cache buster and technically a new URL so status code 307
+		 * Temporary Redirect applies.
 		 *
 		 * @link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
 		 */
