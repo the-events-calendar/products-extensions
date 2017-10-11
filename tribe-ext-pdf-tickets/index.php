@@ -569,7 +569,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 					'email_attach_pdf'
 				) );
 			} elseif ( 'woo' === $ticket_provider_slug ) {
-				add_filter( 'wootickets_ticket_email_attachments', array(
+				add_filter( 'tribe_tickets_plus_woo_email_attachments', array(
 					$this,
 					'email_attach_pdf',
 				) );
