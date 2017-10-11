@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     Event Tickets Extension: PDF Tickets
- * Description:     When this extension is active, Event Tickets (RSVP) and Event Tickets Plus (WooCommerce and Easy Digital Downloads) attendee tickets will be turned into PDFs, saved to your Uploads directory (but not added to your Media Library), and attached to the ticket email. Each attendee's ticket will be a separate PDF attachment to the single ticket email. The wp-admin Attendees Report Table (as well as the Community Events Tickets one, if applicable) will have a link to each PDF Ticket, allowing you to view any attendee's ticket in PDF format. Attendees will be able to self-service and obtain a PDF copy of their ticket by viewing each event's "View your Tickets" link. This extension has no wp-admin settings to configure; deactivate this plugin if you want PDF Tickets functionality disabled.
+ * Description:     RSVP, WooCommerce, and Easy Digital Downloads will become PDFs (will be saved to your Uploads directory) and attached to the ticket email.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__PDF_Tickets
  * Author:          Modern Tribe, Inc.
