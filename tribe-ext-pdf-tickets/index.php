@@ -288,6 +288,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	/**
 	 * Get the event/post ID from the Attendee ID.
 	 *
+	 * Cannot use the existing
+	 * Tribe__Tickets__Tickets::get_instance()->get_event_id_from_attendee_id()
+	 * because its get_instance() is null (meant to be extended/overridden).
+	 *
 	 * @see Tribe__Extension__PDF_Tickets::get_event_meta_key_from_attendee_id()
 	 *
 	 * @param $attendee_id
