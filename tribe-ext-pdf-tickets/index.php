@@ -286,32 +286,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the event/post ID from the Attendee ID.
-	 *
-	 * Cannot use the existing
-	 * Tribe__Tickets__Tickets::get_instance()->get_event_id_from_attendee_id()
-	 * because its get_instance() is null (meant to be extended/overridden).
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_event_meta_key_from_attendee_id()
-	 *
-	 * @param $attendee_id
-	 *
-	 * @return bool|int
-	 */
-	protected function get_event_id_from_attendee_id( $attendee_id ) {
-		$event_key = $this->get_event_meta_key_from_attendee_id( $attendee_id );
-
-		$event_id = absint( get_post_meta( $attendee_id, $event_key, true ) );
-
-		if ( empty( $event_id ) ) {
-			return false;
-		}
-
-		return $event_id;
-
-	}
-
-	/**
 	 * Get the ticket provider slug from an Attendee ID.
 	 *
 	 * @see Tribe__Extension__PDF_Tickets::get_event_meta_key_from_attendee_id()
@@ -387,7 +361,14 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @return bool|string
 	 */
 	protected function get_pdf_name( $attendee_id = 0 ) {
-		$event_id = $this->get_event_id_from_attendee_id( $attendee_id );
+		// should only be one result
+		$event_ids = tribe_tickets_get_event_ids( $attendee_id );
+
+		if ( ! empty( $event_ids ) ) {
+			$event_id = $event_ids[0];
+		} else {
+			$event_id = 0;
+		}
 
 		$ticket_provider_slug = $this->get_ticket_provider_slug_from_attendee_id( $attendee_id );
 
@@ -483,9 +464,13 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return $successful;
 		}
 
-		$event_id = $this->get_event_id_from_attendee_id( $attendee_id );
+		// should only be one result
+		$event_ids = tribe_tickets_get_event_ids( $attendee_id );
 
-		$attendees = $ticket_instance->get_attendees_array( $event_id );
+		if ( ! empty( $event_ids ) ) {
+			$event_id  = $event_ids[0];
+			$attendees = $ticket_instance->get_attendees_array( $event_id );
+		}
 
 		if (
 			empty( $attendees )
