@@ -196,6 +196,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	/**
 	 * Determine the ticket type from the Attendee ID.
 	 *
+	 * @see tribe_tickets_get_ticket_provider()
+	 *
 	 * @param $attendee_id
 	 *
 	 * @return bool|string If string, should be one of these 3:
@@ -269,39 +271,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		}
 
 		return $ticket_provider_slug;
-	}
-
-	/**
-	 * Get the ticket class' instance given a valid ticket provider slug.
-	 *
-	 * @param $ticket_provider_slug
-	 *
-	 * @return bool|Tribe__Tickets__RSVP|Tribe__Tickets_Plus__Commerce__EDD__Main|Tribe__Tickets_Plus__Commerce__WooCommerce__Main
-	 */
-	protected function get_ticket_provider_main_class_instance( $ticket_provider_slug ) {
-		if ( 'rsvp' === $ticket_provider_slug ) {
-			if ( ! class_exists( 'Tribe__Tickets__RSVP' ) ) {
-				return false;
-			} else {
-				$instance = Tribe__Tickets__RSVP::get_instance();
-			}
-		} elseif ( 'woo' === $ticket_provider_slug ) {
-			if ( ! class_exists( 'Tribe__Tickets_Plus__Commerce__WooCommerce__Main' ) ) {
-				return false;
-			} else {
-				$instance = Tribe__Tickets_Plus__Commerce__WooCommerce__Main::get_instance();
-			}
-		} elseif ( 'edd' === $ticket_provider_slug ) {
-			if ( ! class_exists( 'Tribe__Tickets_Plus__Commerce__EDD__Main' ) ) {
-				return false;
-			} else {
-				$instance = Tribe__Tickets_Plus__Commerce__EDD__Main::get_instance();
-			}
-		} else {
-			return false; // unknown ticket provider
-		}
-
-		return $instance;
 	}
 
 	/**
@@ -391,7 +360,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * Create PDF, save to server, and add to email queue.
 	 *
 	 * @see Tribe__Extension__PDF_Tickets::get_ticket_provider_slug_from_attendee_id()
-	 * @see Tribe__Extension__PDF_Tickets::get_ticket_provider_main_class_instance()
+	 * @see tribe_tickets_get_ticket_provider()
+	 * @see tribe_tickets_get_event_ids()
 	 * @see Tribe__Tickets__RSVP::generate_tickets_email_content()
 	 * @see Tribe__Tickets_Plus__Commerce__WooCommerce__Main::generate_tickets_email_content()
 	 * @see Tribe__Tickets_Plus__Commerce__EDD__Main::generate_tickets_email_content()
@@ -412,7 +382,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 		$ticket_provider_slug = $this->get_ticket_provider_slug_from_attendee_id( $attendee_id );
 
-		$ticket_instance = $this->get_ticket_provider_main_class_instance( $ticket_provider_slug );
+		$ticket_provider_data = tribe_tickets_get_ticket_provider( $attendee_id );
+		$ticket_class = $ticket_provider_data->className;
+		$ticket_instance = $ticket_class::get_instance();
 
 		if ( empty( $ticket_instance ) ) {
 			return $successful;
