@@ -21,6 +21,30 @@ if ( ! class_exists( 'Tribe__Extension' ) ) {
 class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 	/**
+	 * The custom field in which to store the attendee's PDF ticket's file name.
+	 *
+	 * We generate a random file name for security purposes, but we store it in
+	 * the database for lookup purposes.
+	 *
+	 * @var string
+	 */
+	public $pdf_ticket_meta_key = '_tribe_tickets_pdf_file_name';
+
+	/**
+	 * The query argument key for the Attendee ID.
+	 *
+	 * @var string
+	 */
+	public $pdf_url_query_arg_key = 'tribe_tickets_pdf_attendee';
+
+	/**
+	 * The query argument key for retrying loading an attempted PDF.
+	 *
+	 * @var string
+	 */
+	public $pdf_retry_url_query_arg_key = 'tribe_tickets_pdf_retried';
+
+	/**
 	 * An array of the absolute file paths of the PDF(s) to be attached
 	 * to the ticket email.
 	 *
@@ -31,23 +55,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	protected $attachments_array = array();
 
 	/**
-	 * The attendee ticket's event meta key. Stored for performance reasons.
-	 *
-	 * Should be one of these 3: _tribe_rsvp_event, _tribe_wooticket_event,
-	 * _tribe_eddticket_event.
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_event_meta_key_from_attendee_id()
-	 *
-	 * @var string
-	 */
-	protected $event_meta_key = '';
-
-	/**
 	 * Setup the Extension's properties.
 	 *
 	 * This always executes even if the required plugins are not present.
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::string_starts_with()
 	 */
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Tickets__Main', '4.5.2' );
@@ -59,14 +69,12 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 	/**
 	 * Check required plugins after all Tribe plugins have loaded.
-	 *
-	 * @see Tribe__Dependency::get_active_plugins()
 	 */
 	public function required_tribe_classes() {
 		$actives = Tribe__Dependency::instance()->get_active_plugins();
 
 		if ( array_key_exists( 'Tribe__Tickets_Plus__Main', $actives ) ) {
-			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
+			//$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
 
 			if ( array_key_exists( 'Tribe__Events__Community__Tickets__Main', $actives ) ) {
 				$this->add_required_plugin( 'Tribe__Events__Community__Tickets__Main', '4.4.3' );
@@ -194,96 +202,23 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Determine the ticket type from the Attendee ID.
-	 *
-	 * @see tribe_tickets_get_ticket_provider()
-	 *
-	 * @param $attendee_id
-	 *
-	 * @return bool|string If string, should be one of these 3:
-	 *                     _tribe_rsvp_event
-	 *                     _tribe_wooticket_event
-	 *                     _tribe_eddticket_event
-	 */
-	protected function get_event_meta_key_from_attendee_id( $attendee_id ) {
-		// Since this runs many times, store for performance reasons.
-		if ( ! empty( $this->event_meta_key ) ) {
-			return $this->event_meta_key;
-		}
-
-		$attendee_id = absint( $attendee_id );
-
-		if (
-			0 >= $attendee_id
-			|| ! function_exists( 'tribe_tickets_get_ticket_provider' )
-		) {
-			return false;
-		}
-
-		$ticket_provider_data           = tribe_tickets_get_ticket_provider( $attendee_id );
-		$ticket_provider_event_meta_key = $ticket_provider_data->attendee_event_key;
-
-		$ends_in_event = $this->string_ends_with( $ticket_provider_event_meta_key, '_event' );
-
-		if ( true === $ends_in_event ) {
-			$starts_with_tribe = $this->string_starts_with( $ticket_provider_event_meta_key, '_tribe_' );
-			if ( true === $starts_with_tribe ) {
-				$event_key = $ticket_provider_event_meta_key;
-			}
-		}
-
-		if ( empty( $event_key ) ) {
-			return false;
-		}
-
-		$this->event_meta_key = $event_key;
-
-		return $this->event_meta_key;
-	}
-
-	/**
-	 * Get the ticket provider slug from an Attendee ID.
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_event_meta_key_from_attendee_id()
-	 *
-	 * @param $attendee_id
-	 *
-	 * @return string
-	 */
-	protected function get_ticket_provider_slug_from_attendee_id( $attendee_id ) {
-		$event_key = $this->get_event_meta_key_from_attendee_id( $attendee_id );
-		/**
-		 * Determine the ticket type from the event key
-		 *
-		 * These slugs are not just made up. They are the same as the
-		 * 'provider_slug' key that comes from get_order_data() in each
-		 * ticket provider's main classes. However, we are simply using
-		 * them for file naming purposes.
-		 */
-		if ( false !== strpos( $event_key, 'rsvp' ) ) {
-			$ticket_provider_slug = 'rsvp';
-		} elseif ( false !== strpos( $event_key, 'wooticket' ) ) {
-			$ticket_provider_slug = 'woo';
-		} elseif ( false !== strpos( $event_key, 'eddticket' ) ) {
-			$ticket_provider_slug = 'edd';
-		} else {
-			$ticket_provider_slug = ''; // unknown ticket type
-		}
-
-		return $ticket_provider_slug;
-	}
-
-	/**
 	 * PDF file name without leading server path or URL, created solely from
 	 * the Attendee ID.
 	 *
-	 * Naming convention for this extension's PDFs.
+	 * Naming convention for this extension's PDFs, inclusive of ".pdf" file
+	 * extension. Stored as a custom field on the Attendee ID (ticket post ID).
 	 *
 	 * @param $attendee_id Ticket Attendee ID.
 	 *
-	 * @return bool|string
+	 * @return string
 	 */
 	protected function get_pdf_name( $attendee_id = 0 ) {
+		$file_name = get_post_meta( $attendee_id, $this->pdf_ticket_meta_key, true );
+
+		if ( ! empty( $file_name ) ) {
+			return $file_name;
+		}
+
 		// should only be one result
 		$event_ids = tribe_tickets_get_event_ids( $attendee_id );
 
@@ -293,46 +228,52 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			$event_id = 0;
 		}
 
-		$ticket_provider_slug = $this->get_ticket_provider_slug_from_attendee_id( $attendee_id );
+		$ticket_provider_data = tribe_tickets_get_ticket_provider( $attendee_id );
 
-		// Make sure Attendee ID is wrapped in double-underscores so get_attendee_id_from_attempted_url() works
-		$file_name = sprintf( 'et_%d_%s__%d__',
-			$event_id,
-			$ticket_provider_slug,
-			$attendee_id
-		);
+		$ticket_class = $ticket_provider_data->className;
 
-		$file_name .= md5( $file_name );
+		$file_name = $this->generate_random_pdf_name( $attendee_id, $event_id, $ticket_class );
 
-		$file_name = substr( $file_name, 0, 50 );
+		add_post_meta( $attendee_id, $this->pdf_ticket_meta_key, $file_name, true );
+
+		return $file_name;
+	}
+
+	/**
+	 * Generate unique ID file name.
+	 *
+	 * @param int $attendee_id
+	 * @param int $event_id
+	 * @param int $ticket_class
+	 *
+	 * @return string
+	 */
+	private function generate_random_pdf_name( $attendee_id = 0, $event_id = 0, $ticket_class = '' ) {
+		$file_name = uniqid( 'tribe_tickets_', true );
+
+		// uniqid() with more_entropy results in something like '59dfc07503b009.71316471'
+		$file_name = str_replace( '.', '', $file_name );
 
 		/**
 		 * Filter to customize the file name of the generated PDF.
 		 *
-		 * Note that it also affects the lookup of existing PDF files (and
-		 * guessing an Attendee's ID by assuming it is wrapped in double-
-		 * underscores) so use at your own risk knowing that it is
-		 * recommended to not use this filter.
+		 * Could choose to limit the length, add additional randomization, or
+		 * even remove the file extension if needed for some reason.
 		 *
 		 * @var $file_name
+		 * @var $ticket_class
 		 * @var $event_id
-		 * @var $ticket_provider_slug
 		 * @var $attendee_id
 		 */
-		$file_name = apply_filters( 'tribe_ext_pdf_tickets_get_pdf_name', $file_name, $event_id, $ticket_provider_slug, $attendee_id );
+		$file_name = apply_filters( 'tribe_ext_pdf_tickets_generate_random_pdf_name', $file_name, $ticket_class, $event_id, $attendee_id );
 
-		$file_name .= '.pdf';
-
-		// remove all whitespace from file name, just as a sanity check
-		$file_name = preg_replace( '/\s+/', '', $file_name );
+		$file_name = sanitize_file_name( $file_name );
 
 		return $file_name;
 	}
 
 	/**
 	 * Get absolute path to the PDF file, inclusive of .pdf at the end.
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_pdf_name()
 	 *
 	 * @param $attendee_id
 	 *
@@ -345,32 +286,22 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	/**
 	 * Get the full URL to the PDF file, inclusive of .pdf at the end.
 	 *
-	 * @see Tribe__Extension__PDF_Tickets::uploads_directory_url()
-	 * @see Tribe__Extension__PDF_Tickets::get_pdf_name()
+	 * Example result: http://yoursite.com/wp-content/uploads/tribe_tickets_xh2msh810osajsz.pdf?tribe_tickets_pdf_attendee=824
 	 *
 	 * @param $attendee_id
 	 *
 	 * @return string
 	 */
 	private function get_pdf_url( $attendee_id ) {
-		return $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id );
+		$file_url = $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id );
+
+		$file_url = add_query_arg( $this->pdf_url_query_arg_key, $attendee_id, $file_url );
+
+		return esc_url( $file_url );
 	}
 
 	/**
 	 * Create PDF, save to server, and add to email queue.
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_ticket_provider_slug_from_attendee_id()
-	 * @see tribe_tickets_get_ticket_provider()
-	 * @see tribe_tickets_get_event_ids()
-	 * @see Tribe__Tickets__RSVP::generate_tickets_email_content()
-	 * @see Tribe__Tickets_Plus__Commerce__WooCommerce__Main::generate_tickets_email_content()
-	 * @see Tribe__Tickets_Plus__Commerce__EDD__Main::generate_tickets_email_content()
-	 * @see Tribe__Extension__PDF_Tickets::get_event_id_from_attendee_id()
-	 * @see Tribe__Tickets__RSVP::get_attendees_array()
-	 * @see Tribe__Tickets_Plus__Commerce__WooCommerce__Main::get_attendees_array()
-	 * @see Tribe__Tickets_Plus__Commerce__EDD__Main::get_attendees_array()
-	 * @see Tribe__Extension__PDF_Tickets::get_pdf_path()
-	 * @see Tribe__Extension__PDF_Tickets::output_pdf()
 	 *
 	 * @param      $attendee_id ID of attendee ticket.
 	 * @param bool $email       Add PDF to email attachments array.
@@ -380,11 +311,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	public function do_upload_pdf( $attendee_id, $email = true ) {
 		$successful = false;
 
-		$ticket_provider_slug = $this->get_ticket_provider_slug_from_attendee_id( $attendee_id );
-
 		$ticket_provider_data = tribe_tickets_get_ticket_provider( $attendee_id );
-		$ticket_class = $ticket_provider_data->className;
-		$ticket_instance = $ticket_class::get_instance();
+		$ticket_class         = $ticket_provider_data->className;
+		$ticket_instance      = $ticket_class::get_instance();
 
 		if ( empty( $ticket_instance ) ) {
 			return $successful;
@@ -442,9 +371,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		if ( file_exists( $file_name ) ) {
 			$successful = true;
 		} else {
-			$this->output_pdf( $html, $file_name );
-
-			$successful = true;
+			$successful = $this->output_pdf( $html, $file_name );
 		}
 
 		/**
@@ -453,24 +380,24 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * Might be useful if you want the PDF file added to the Media Library
 		 * via wp_insert_attachment(), for example.
 		 *
+		 * @var $ticket_class
 		 * @var $event_id
 		 * @var $attendee_id
-		 * @var $ticket_provider_slug
 		 * @var $file_name
 		 */
-		do_action( 'tribe_ext_pdf_tickets_uploaded_pdf', $event_id, $attendee_id, $ticket_provider_slug, $file_name );
+		do_action( 'tribe_ext_pdf_tickets_uploaded_pdf', $ticket_class, $event_id, $attendee_id, $file_name );
 
 		/**
 		 * Filter to disable PDF email attachments, either entirely (just pass
 		 * false) or per event, attendee, ticket type, or some other logic.
 		 *
 		 * @var $email
+		 * @var $ticket_class
 		 * @var $event_id
 		 * @var $attendee_id
-		 * @var $ticket_provider_slug
 		 * @var $file_name
 		 */
-		$email = (bool) apply_filters( 'tribe_ext_pdf_tickets_attach_to_email', $email, $event_id, $attendee_id, $ticket_provider_slug, $file_name );
+		$email = (bool) apply_filters( 'tribe_ext_pdf_tickets_attach_to_email', $email, $ticket_class, $event_id, $attendee_id, $file_name );
 
 		if (
 			true === $successful
@@ -478,21 +405,12 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		) {
 			$this->attachments_array[] = $file_name;
 
-			if ( 'rsvp' === $ticket_provider_slug ) {
-				add_filter( 'tribe_rsvp_email_attachments', array(
-					$this,
-					'email_attach_pdf'
-				) );
-			} elseif ( 'woo' === $ticket_provider_slug ) {
-				add_filter( 'tribe_tickets_plus_woo_email_attachments', array(
-					$this,
-					'email_attach_pdf',
-				) );
-			} elseif ( 'edd' === $ticket_provider_slug ) {
-				add_filter( 'edd_ticket_receipt_attachments', array(
-					$this,
-					'email_attach_pdf'
-				) );
+			if ( 'Tribe__Tickets__RSVP' === $ticket_class ) {
+				add_filter( 'tribe_rsvp_email_attachments', array( $this, 'email_attach_pdf' ) );
+			} elseif ( 'Tribe__Tickets_Plus__Commerce__WooCommerce__Main' === $ticket_class ) {
+				add_filter( 'tribe_tickets_plus_woo_email_attachments', array( $this, 'email_attach_pdf', ) );
+			} elseif ( 'Tribe__Tickets_Plus__Commerce__EDD__Main' === $ticket_class ) {
+				add_filter( 'edd_ticket_receipt_attachments', array( $this, 'email_attach_pdf' ) );
 			} else {
 				// unknown ticket type so no emailing to do
 			}
@@ -523,8 +441,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	/**
 	 * Create the HTML link markup (a href) for a PDF Ticket file.
 	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_pdf_url()
-	 *
 	 * @param $attendee_id
 	 *
 	 * @return string
@@ -532,6 +448,11 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	protected function ticket_link( $attendee_id ) {
 		$text = __( 'PDF Ticket', 'tribe-extension' );
 
+		/**
+		 * Filter to control the link target for Attendees Report links.
+		 *
+		 * @param $target
+		 */
 		$target = apply_filters( 'tribe_ext_pdf_tickets_link_target', '_blank' );
 
 		$output = sprintf(
@@ -602,16 +523,13 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *                          $filename (may include a path).
 	 *                          S: return the document as a string.
 	 *                          $filename is ignored.
+	 *
+	 * @return bool
 	 */
 	protected function output_pdf( $html, $file_name, $dest = 'F' ) {
 		// Should not happen but a fail-safe
 		if ( empty( $file_name ) ) {
-			$file_name = 'et_ticket_' . uniqid();
-		}
-
-		// If $file_name does not end in ".pdf", add it.
-		if ( '.pdf' !== substr( $file_name, - 4 ) ) {
-			$file_name .= '.pdf';
+			return false;
 		}
 
 		/**
@@ -625,12 +543,13 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 		$mpdf = $this->get_mpdf( $html );
 		$mpdf->Output( $file_name, $dest );
+
+		return true;
 	}
 
 	/**
 	 * Converts HTML to mPDF object.
 	 *
-	 * @see Tribe__Extension__PDF_Tickets::mpdf_lib_dir()
 	 * @see mPDF::WriteHTML()
 	 *
 	 * @param string $html The full HTML you want converted to a PDF.
@@ -660,91 +579,14 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the full, current URL.
-	 *
-	 * @link https://css-tricks.com/snippets/php/get-current-page-url/
-	 *
-	 * @return string
-	 */
-	private function get_current_page_url() {
-		$url = @( $_SERVER["HTTPS"] != 'on' ) ? 'http://' . $_SERVER["SERVER_NAME"] : 'https://' . $_SERVER["SERVER_NAME"];
-		$url .= ( $_SERVER["SERVER_PORT"] !== '80' ) ? ":" . $_SERVER["SERVER_PORT"] : "";
-		$url .= $_SERVER["REQUEST_URI"];
-
-		return $url;
-	}
-
-	/**
-	 * Get the Attendee ID from the attempted URL.
-	 *
-	 * Once we have the current page URL, see if it looks like one of the PDF
-	 * Ticket file names, and, if it does, try to parse the Attendee ID out of
-	 * it. Should only be running when hitting a 404.
-	 *
-	 * @see Tribe__Extension__PDF_Tickets::uploads_directory_url()
-	 *
-	 * @param $url
-	 *
-	 * @return int
-	 */
-	private function get_attendee_id_from_attempted_url( $url ) {
-		$url = strtolower( esc_url( $url ) );
-
-		$beginning_url_check = $this->uploads_directory_url() . 'et_';
-
-		// bail if...
-		if (
-			// no URL
-			empty( $url )
-			// not looking for a file in Uploads that begins with 'et_'
-			|| false === $this->string_starts_with( $url, $beginning_url_check )
-			// not looking for a file ending in '.pdf'
-			|| false === $this->string_ends_with( $_SERVER['REQUEST_URI'], '.pdf' )
-		) {
-			return 0;
-		}
-
-		// remove from the front
-		$file_name = str_replace( $beginning_url_check, '', $url );
-
-		// look for an integer with double underscores on both sides
-		preg_match( '/__(\d+)__/', $file_name, $matches );
-
-		// bail if not found
-		if ( empty( $matches ) ) {
-			return 0;
-		}
-
-		$guessed_attendee_id = absint( $matches[1] );
-
-		if ( 0 >= $guessed_attendee_id ) {
-			return 0;
-		}
-
-		$post_type = get_post_type( $guessed_attendee_id );
-
-		if (
-			empty( $post_type )
-			|| false === $this->string_starts_with( $post_type, 'tribe_' )
-		) {
-			return 0;
-		}
-
-		// hopefully we were right!
-		return $guessed_attendee_id;
-	}
-
-	/**
-	 * Create and upload an 404'd PDF Ticket, then redirect to it
-	 * now that it exists.
+	 * Create and upload a 404'd PDF Ticket, then redirect to it now that
+	 * it exists.
 	 *
 	 * If we attempted to load a PDF Ticket but it was not found (404), then
 	 * create the PDF Ticket, upload it to the server, and reload the attempted
 	 * URL, adding a query string on the end as a cache buster and so the
 	 * 307 Temporary Redirect code is technically valid.
 	 *
-	 * @see Tribe__Extension__PDF_Tickets::get_current_page_url()
-	 * @see Tribe__Extension__PDF_Tickets::get_attendee_id_from_attempted_url()
 	 * @see Tribe__Extension__PDF_Tickets::do_upload_pdf()
 	 */
 	public function if_pdf_url_404_upload_pdf_then_reload() {
@@ -752,28 +594,25 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		$url = strtolower( $this->get_current_page_url() );
-
-		$guessed_attendee_id = $this->get_attendee_id_from_attempted_url( $url );
-
-		if ( empty( $guessed_attendee_id ) ) {
+		if ( ! function_exists( 'tribe_get_request_var' ) ) {
 			return;
 		}
 
-		$query_key = 'et_ticket_created';
+		// Check if we already retried, in which case we should stop retrying
+		$already_retried = tribe_get_request_var( $this->pdf_retry_url_query_arg_key );
 
-		if ( isset ( $_GET[ $query_key ] ) ) {
-			$already_retried = true;
-		} else {
-			$already_retried = false;
-		}
-
-		if ( true === $already_retried ) {
+		if ( ! empty( $already_retried ) ) {
 			return;
 		}
 
-		// if we got this far, we probably guessed correctly so let's generate the PDF
-		$this->do_upload_pdf( $guessed_attendee_id, false );
+		// Get the Attendee ID and then try for the first time
+		$attendee_id = tribe_get_request_var( $this->pdf_url_query_arg_key );
+
+		if ( empty( $attendee_id ) ) {
+			return;
+		}
+
+		$this->do_upload_pdf( $attendee_id, false );
 
 		/**
 		 * Redirect to retrying reloading the PDF.
@@ -783,8 +622,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 *
 		 * @link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
 		 */
-		$url = add_query_arg( $query_key, time() );
-		wp_redirect( $url, 307 );
+		$url = add_query_arg( $this->pdf_retry_url_query_arg_key, time() );
+
+		wp_redirect( esc_url_raw( $url ), 307 );
+
 		exit;
 	}
 
