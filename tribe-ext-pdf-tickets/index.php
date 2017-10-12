@@ -24,7 +24,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * The custom field in which to store the attendee's PDF ticket's file name.
 	 *
 	 * We generate a random file name for security purposes, but we store it in
-	 * the database for lookup purposes.
+	 * the database for lookup purposes. It should not end in ".pdf" because
+	 * the file extension gets added manually during output of the full file
+	 * path or the full URL/link.
 	 *
 	 * @var string
 	 */
@@ -205,7 +207,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * PDF file name without leading server path or URL, created solely from
 	 * the Attendee ID.
 	 *
-	 * Naming convention for this extension's PDFs, inclusive of ".pdf" file
+	 * Naming convention for this extension's PDFs, excluding the ".pdf" file
 	 * extension. Stored as a custom field on the Attendee ID (ticket post ID).
 	 *
 	 * @param $attendee_id Ticket Attendee ID.
@@ -273,7 +275,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get absolute path to the PDF file, inclusive of .pdf at the end.
+	 * Get absolute path to the PDF file, including ".pdf" at the end.
 	 *
 	 * @param $attendee_id
 	 *
@@ -284,7 +286,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Get the full URL to the PDF file, inclusive of .pdf at the end.
+	 * Get the full URL to the PDF file, including ".pdf" at the end.
 	 *
 	 * Example result: http://yoursite.com/wp-content/uploads/tribe_tickets_xh2msh810osajsz.pdf?tribe_tickets_pdf_attendee=824
 	 *
@@ -527,7 +529,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @return bool
 	 */
 	protected function output_pdf( $html, $file_name, $dest = 'F' ) {
-		// Should not happen but a fail-safe
 		if ( empty( $file_name ) ) {
 			return false;
 		}
