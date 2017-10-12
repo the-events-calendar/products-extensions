@@ -94,38 +94,20 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		}
 
 		// Event Tickets
-		add_action( 'event_tickets_attendees_table_row_actions', array(
-			$this,
-			'pdf_attendee_table_row_actions'
-		), 0, 2 );
+		add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'pdf_attendee_table_row_actions' ), 0, 2 );
 
-		add_action( 'event_tickets_orders_attendee_contents', array(
-			$this,
-			'pdf_attendee_table_row_action_contents'
-		), 10, 2 );
+		add_action( 'event_tickets_orders_attendee_contents', array( $this, 'pdf_attendee_table_row_action_contents' ), 10, 2 );
 
-		add_action( 'event_tickets_rsvp_attendee_created', array(
-			$this,
-			'do_upload_pdf'
-		), 50, 1 );
+		add_action( 'event_tickets_rsvp_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 
 		// Event Tickets Plus: WooCommerce
-		add_action( 'event_ticket_woo_attendee_created', array(
-			$this,
-			'do_upload_pdf'
-		), 50, 1 );
+		add_action( 'event_ticket_woo_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 
 		// Event Tickets Plus: Easy Digital Downloads
-		add_action( 'event_ticket_edd_attendee_created', array(
-			$this,
-			'do_upload_pdf'
-		), 50, 1 );
+		add_action( 'event_ticket_edd_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 
 		// For generating a PDF on the fly
-		add_action( 'template_redirect', array(
-			$this,
-			'if_pdf_url_404_upload_pdf_then_reload'
-		) );
+		add_action( 'template_redirect', array( $this, 'if_pdf_url_404_upload_pdf_then_reload' ) );
 	}
 
 	/**
