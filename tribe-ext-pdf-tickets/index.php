@@ -74,7 +74,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$actives = Tribe__Dependency::instance()->get_active_plugins();
 
 		if ( array_key_exists( 'Tribe__Tickets_Plus__Main', $actives ) ) {
-			//$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
+			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
 
 			if ( array_key_exists( 'Tribe__Events__Community__Tickets__Main', $actives ) ) {
 				$this->add_required_plugin( 'Tribe__Events__Community__Tickets__Main', '4.4.3' );
@@ -216,11 +216,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$file_name = get_post_meta( $attendee_id, $this->pdf_ticket_meta_key, true );
 
 		if ( ! empty( $file_name ) ) {
-			// If $file_name does not end in ".pdf", add it.
-			if ( ! $this->string_ends_with( $file_name, '.pdf' ) ) {
-				$file_name .= '.pdf';
-			}
-
 			return $file_name;
 		}
 
@@ -259,8 +254,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		// uniqid() with more_entropy results in something like '59dfc07503b009.71316471'
 		$file_name = str_replace( '.', '', $file_name );
 
-		$file_name .= '.pdf';
-
 		/**
 		 * Filter to customize the file name of the generated PDF.
 		 *
@@ -287,7 +280,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @return string
 	 */
 	private function get_pdf_path( $attendee_id ) {
-		return $this->uploads_directory_path() . $this->get_pdf_name( $attendee_id );
+		return $this->uploads_directory_path() . $this->get_pdf_name( $attendee_id ) . '.pdf';
 	}
 
 	/**
@@ -300,7 +293,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @return string
 	 */
 	private function get_pdf_url( $attendee_id ) {
-		$file_url = $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id );
+		$file_url = $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id ) . '.pdf';
 
 		$file_url = add_query_arg( $this->pdf_url_query_arg_key, $attendee_id, $file_url );
 
