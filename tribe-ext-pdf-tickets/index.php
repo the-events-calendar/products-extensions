@@ -50,36 +50,29 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @see Tribe__Extension__PDF_Tickets::string_starts_with()
 	 */
 	public function construct() {
-		// Always require ET 4.5.2+
 		$this->add_required_plugin( 'Tribe__Tickets__Main', '4.5.2' );
 
-		// Get our active plugins and remove all slashes (Unix and Windows).
-		$active_plugins_option = get_option( 'active_plugins' );
-		$active_plugins        = array();
-		foreach ( $active_plugins_option as $value ) {
-			if (
-				$this->string_starts_with( $value, 'event-tickets' )
-				|| $this->string_starts_with( $value, 'the-events-calendar' )
-			) {
-				$value            = str_replace( '/', '', $value );
-				$value            = str_replace( '\\', '', $value );
-				$active_plugins[] = $value;
-			}
-		}
+		add_action( 'tribe_plugins_loaded', array( $this, 'required_tribe_classes' ), 0 );
 
-		// if Event Tickets Plus, require 4.5.6+
-		if ( in_array( 'event-tickets-plusevent-tickets-plus.php',
-			$active_plugins ) ) {
+		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' );
+	}
+
+	/**
+	 * Check required plugins after all Tribe plugins have loaded.
+	 *
+	 * @see Tribe__Dependency::get_active_plugins()
+	 */
+	public function required_tribe_classes() {
+		$actives = Tribe__Dependency::instance()->get_active_plugins();
+
+		if ( array_key_exists( 'Tribe__Tickets_Plus__Main', $actives ) ) {
 			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
 
-			// if Community Events Tickets (only possible with Event Tickets Plus), require 4.4.3+
-			if ( in_array( 'the-events-calendar-community-events-ticketsevents-community-tickets.php', $active_plugins ) ) {
+			if ( array_key_exists( 'Tribe__Events__Community__Tickets__Main', $actives ) ) {
 				$this->add_required_plugin( 'Tribe__Events__Community__Tickets__Main', '4.4.3' );
 			}
 
 		}
-
-		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' );
 	}
 
 	/**
