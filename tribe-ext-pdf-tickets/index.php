@@ -216,6 +216,11 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$file_name = get_post_meta( $attendee_id, $this->pdf_ticket_meta_key, true );
 
 		if ( ! empty( $file_name ) ) {
+			// If $file_name does not end in ".pdf", add it.
+			if ( ! $this->string_ends_with( $file_name, '.pdf' ) ) {
+				$file_name .= '.pdf';
+			}
+
 			return $file_name;
 		}
 
@@ -253,6 +258,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 		// uniqid() with more_entropy results in something like '59dfc07503b009.71316471'
 		$file_name = str_replace( '.', '', $file_name );
+
+		$file_name .= '.pdf';
 
 		/**
 		 * Filter to customize the file name of the generated PDF.
