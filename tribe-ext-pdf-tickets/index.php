@@ -194,13 +194,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * Determine the ticket type from the Attendee ID's custom field keys.
-	 *
-	 * This is accomplished by getting all of an Attendee record's custom
-	 * fields (keys and values) and traversing through the keys (custom field
-	 * names) until we find a key that matches the naming convention (starts
-	 * with "_tribe" and ends with "_event") and returning this find (the
-	 * full custom field key).
+	 * Determine the ticket type from the Attendee ID.
 	 *
 	 * @param $attendee_id
 	 *
@@ -217,37 +211,22 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 		$attendee_id = absint( $attendee_id );
 
-		if ( 0 >= $attendee_id ) {
+		if (
+			0 >= $attendee_id
+			|| ! function_exists( 'tribe_tickets_get_ticket_provider' )
+		) {
 			return false;
 		}
 
-		// Get all the custom fields for the Attendee Post ID
-		$attendee_custom_fields = get_post_custom( $attendee_id );
+		$ticket_provider_data           = tribe_tickets_get_ticket_provider( $attendee_id );
+		$ticket_provider_event_meta_key = $ticket_provider_data->attendee_event_key;
 
-		/**
-		 * Find the first custom field key that ends in "_event", although
-		 * there should not ever be more than one.
-		 *
-		 * The key is named this way even if a ticket is assigned to a post
-		 * type other than tribe_events (e.g. post, page).
-		 *
-		 * Chose not to use get_post_meta() here because we do not know the
-		 * ticket type; therefore, we do not know the exact meta_key to search
-		 * for, and we want to avoid multiple database calls.
-		 */
-		foreach ( $attendee_custom_fields as $key => $value ) {
-			/*
-			* Could add a filter to fully support customizing
-			* ATTENDEE_EVENT_KEY, but that would be edge case.
-			*/
-			$ends_in_event = $this->string_ends_with( $key, '_event' );
+		$ends_in_event = $this->string_ends_with( $ticket_provider_event_meta_key, '_event' );
 
-			if ( true === $ends_in_event ) {
-				$starts_with_tribe = $this->string_starts_with( $key, '_tribe_' );
-				if ( true === $starts_with_tribe ) {
-					$event_key = $key;
-					break;
-				}
+		if ( true === $ends_in_event ) {
+			$starts_with_tribe = $this->string_starts_with( $ticket_provider_event_meta_key, '_tribe_' );
+			if ( true === $starts_with_tribe ) {
+				$event_key = $ticket_provider_event_meta_key;
 			}
 		}
 
