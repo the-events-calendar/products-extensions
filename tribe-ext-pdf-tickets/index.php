@@ -73,12 +73,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * Check required plugins after all Tribe plugins have loaded.
 	 */
 	public function required_tribe_classes() {
-		$actives = Tribe__Dependency::instance()->get_active_plugins();
-
-		if ( array_key_exists( 'Tribe__Tickets_Plus__Main', $actives ) ) {
+		if ( Tribe__Dependency::instance()->is_plugin_active( 'Tribe__Tickets_Plus__Main' ) ) {
 			$this->add_required_plugin( 'Tribe__Tickets_Plus__Main', '4.5.6' );
 
-			if ( array_key_exists( 'Tribe__Events__Community__Tickets__Main', $actives ) ) {
+			if ( Tribe__Dependency::instance()->is_plugin_active( 'Tribe__Events__Community__Tickets__Main' ) ) {
 				$this->add_required_plugin( 'Tribe__Events__Community__Tickets__Main', '4.4.3' );
 			}
 
@@ -167,40 +165,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$upload_dir = wp_upload_dir();
 
 		return trailingslashit( $upload_dir['baseurl'] );
-	}
-
-	/**
-	 * Check if one string (haystack) starts with another string (needle).
-	 *
-	 * @param $full  The haystack string.
-	 * @param $start The needle string.
-	 *
-	 * @return bool
-	 */
-	private function string_starts_with( $full, $start ) {
-		$string_position = strpos( $full, $start );
-		if ( 0 === $string_position ) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Check if one string (haystack) ends with another string (needle).
-	 *
-	 * @param $full The haystack string.
-	 * @param $end  The needle string.
-	 *
-	 * @return bool
-	 */
-	private function string_ends_with( $full, $end ) {
-		$comparison = substr_compare( $full, $end, strlen( $full ) - strlen( $end ), strlen( $end ) );
-		if ( 0 === $comparison ) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	/**
