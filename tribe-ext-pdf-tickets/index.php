@@ -21,30 +21,29 @@ if ( ! class_exists( 'Tribe__Extension' ) ) {
 class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 	/**
-	 * The custom field in which to store the attendee's PDF ticket's file name.
+	 * The custom field name in which to store a ticket's Unique ID.
 	 *
-	 * We generate a random file name for security purposes, but we store it in
-	 * the database for lookup purposes. It should not end in ".pdf" because
-	 * the file extension gets added manually during output of the full file
-	 * path or the full URL/link.
+	 * For security purposes, We generate a Unique ID to be used as part of the
+	 * generated file name. We need to store it in the database for
+	 * lookup purposes.
 	 *
 	 * @var string
 	 */
-	public $pdf_ticket_meta_key = '_tribe_tickets_pdf_file_name';
+	public $pdf_ticket_meta_key = '_tribe_ext_pdf_tickets_unique_id';
 
 	/**
 	 * The query argument key for the Attendee ID.
 	 *
 	 * @var string
 	 */
-	public $pdf_url_query_arg_key = 'tribe_tickets_pdf_attendee';
+	public $pdf_unique_id_query_arg_key = 'tribe_ext_pdf_tickets_unique_id';
 
 	/**
 	 * The query argument key for retrying loading an attempted PDF.
 	 *
 	 * @var string
 	 */
-	public $pdf_retry_url_query_arg_key = 'tribe_tickets_pdf_retried';
+	public $pdf_retry_url_query_arg_key = 'tribe_ext_pdf_tickets_retry';
 
 	/**
 	 * An array of the absolute file paths of the PDF(s) to be attached
@@ -67,6 +66,15 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		add_action( 'tribe_plugins_loaded', array( $this, 'required_tribe_classes' ), 0 );
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' );
+
+		/**
+		 * When plugin is activated, add rewrite rules and then flush rewrite
+		 * rules. When plugin is deactivated, just flush rewrite rules.
+		 *
+		 * @link https://developer.wordpress.org/reference/functions/flush_rewrite_rules/#comment-597
+		 */
+		register_activation_hook( __FILE__, array( $this, 'flush_rewrite_rules_on_activation' ) );
+		register_deactivation_hook( __FILE__, array( $this, 'flush_rewrite_rules' ) );
 	}
 
 	/**
@@ -87,6 +95,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * Extension initialization and hooks.
 	 *
 	 * PHP 5.3.7+ is required to avoid blank page content via mPDF.
+	 * Permalinks are required to be set in order to use this plugin. If they
+	 * are not set, display an informative admin error with a link to the
+	 * Permalink Settings admin screen and do not load the rest of this plugin.
 	 *
 	 * @link https://mpdf.github.io/troubleshooting/known-issues.html
 	 */
@@ -101,21 +112,63 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		// Event Tickets
-		add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'pdf_attendee_table_row_actions' ), 0, 2 );
+		if ( ! empty( get_option( 'permalink_structure' ) ) ) {
+			// Event Tickets
+			add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'pdf_attendee_table_row_actions' ), 0, 2 );
 
-		add_action( 'event_tickets_orders_attendee_contents', array( $this, 'pdf_attendee_table_row_action_contents' ), 10, 2 );
+			add_action( 'event_tickets_orders_attendee_contents', array( $this, 'pdf_attendee_table_row_action_contents' ), 10, 2 );
 
-		add_action( 'event_tickets_rsvp_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
+			add_action( 'event_tickets_rsvp_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 
-		// Event Tickets Plus: WooCommerce
-		add_action( 'event_ticket_woo_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
+			// Event Tickets Plus: WooCommerce
+			add_action( 'event_ticket_woo_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 
-		// Event Tickets Plus: Easy Digital Downloads
-		add_action( 'event_ticket_edd_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
+			// Event Tickets Plus: Easy Digital Downloads
+			add_action( 'event_ticket_edd_attendee_created', array( $this, 'do_upload_pdf' ), 50, 1 );
 
-		// For generating a PDF on the fly
-		add_action( 'template_redirect', array( $this, 'if_pdf_url_404_upload_pdf_then_reload' ) );
+			// Add rewrite rules
+			add_action( 'init', array( $this, 'add_pdf_file_rewrite_rules' ) );
+			add_action( 'query_vars', array( $this, 'add_custom_query_vars' ) );
+			add_action( 'redirect_canonical', array( $this, 'make_non_trailing_slash_the_canonical' ), 10, 2 );
+
+			// For generating a PDF on the fly
+			add_action( 'template_redirect', array( $this, 'load_pdf' ) );
+		} else {
+			if (
+				! is_admin()
+				|| (
+					defined( 'DOING_AJAX' )
+					&& DOING_AJAX
+				)
+			) {
+				return;
+			}
+
+			global $pagenow; // an Admin global
+
+			$message = '<p style="font-style: italic">';
+
+			$message .= sprintf( esc_html__( 'Permalinks must be enabled in order to use %s.', 'tribe-extension' ), $this->get_name() );
+
+			$message .= '</p>';
+
+			// Do not display link to Permalink Settings page when we are on it.
+			if ( 'options-permalink.php' !== $pagenow ) {
+				$message .= '<p>';
+
+				$message .= sprintf( '<a href="%s">%s</a>',
+					esc_url( admin_url( 'options-permalink.php' ) ),
+					__( 'Change your Permalink settings', 'tribe-extension' )
+				);
+
+				$message .= __( ' or deactivate this plugin.', 'tribe-extension' );
+
+				$message .= '</p>';
+			}
+
+			tribe_notice( $this->get_name(), $message, 'type=error' );
+		}
+
 	}
 
 	/**
@@ -168,74 +221,60 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * PDF file name without leading server path or URL, created solely from
-	 * the Attendee ID.
+	 * The text before the {unique_id}.pdf in the file name.
 	 *
-	 * Naming convention for this extension's PDFs, excluding the ".pdf" file
-	 * extension. Stored as a custom field on the Attendee ID (ticket post ID).
+	 * Default is "tribe_tickets_"
+	 *
+	 * @var string
+	 *
+	 * @return string
+	 */
+	private function get_file_name_prefix() {
+		/**
+		 * Filter to change the string before the Unique ID part of the
+		 * generated file name.
+		 *
+		 * @var $prefix
+		 */
+		$prefix = apply_filters( 'tribe_ext_pdf_tickets_file_name_prefix', 'tribe_tickets_' );
+
+		return (string) $prefix;
+	}
+
+	/**
+	 * Prepend file name prefix to the Unique ID.
+	 *
+	 * Example: tribe_tickets_abc123xyz789
+	 *
+	 * @param $unique_id
+	 *
+	 * @return string
+	 */
+	private function combine_prefix_and_unique_id( $unique_id ) {
+		return $this->get_file_name_prefix() . $unique_id;
+	}
+
+
+	/**
+	 * Full PDF file name on the server.
+	 *
+	 * Does not include leading server path or URL.
+	 * Does include the .pdf file extension.
 	 *
 	 * @param $attendee_id Ticket Attendee ID.
 	 *
 	 * @return string
 	 */
 	protected function get_pdf_name( $attendee_id = 0 ) {
-		$file_name = get_post_meta( $attendee_id, $this->pdf_ticket_meta_key, true );
+		$unique_id = $this->get_unique_id_from_attendee_id( $attendee_id );
 
-		if ( ! empty( $file_name ) ) {
-			return $file_name;
+		$name = '';
+
+		if ( ! empty( $unique_id ) ) {
+			$name = $this->combine_prefix_and_unique_id( $unique_id ) . '.pdf';
 		}
 
-		// should only be one result
-		$event_ids = tribe_tickets_get_event_ids( $attendee_id );
-
-		if ( ! empty( $event_ids ) ) {
-			$event_id = $event_ids[0];
-		} else {
-			$event_id = 0;
-		}
-
-		$ticket_provider_data = tribe_tickets_get_ticket_provider( $attendee_id );
-
-		$ticket_class = $ticket_provider_data->className;
-
-		$file_name = $this->generate_random_pdf_name( $attendee_id, $event_id, $ticket_class );
-
-		add_post_meta( $attendee_id, $this->pdf_ticket_meta_key, $file_name, true );
-
-		return $file_name;
-	}
-
-	/**
-	 * Generate unique ID file name.
-	 *
-	 * @param int $attendee_id
-	 * @param int $event_id
-	 * @param int $ticket_class
-	 *
-	 * @return string
-	 */
-	private function generate_random_pdf_name( $attendee_id = 0, $event_id = 0, $ticket_class = '' ) {
-		$file_name = uniqid( 'tribe_tickets_', true );
-
-		// uniqid() with more_entropy results in something like '59dfc07503b009.71316471'
-		$file_name = str_replace( '.', '', $file_name );
-
-		/**
-		 * Filter to customize the file name of the generated PDF.
-		 *
-		 * Could choose to limit the length, add additional randomization, or
-		 * even remove the file extension if needed for some reason.
-		 *
-		 * @var $file_name
-		 * @var $ticket_class
-		 * @var $event_id
-		 * @var $attendee_id
-		 */
-		$file_name = apply_filters( 'tribe_ext_pdf_tickets_generate_random_pdf_name', $file_name, $ticket_class, $event_id, $attendee_id );
-
-		$file_name = sanitize_file_name( $file_name );
-
-		return $file_name;
+		return $name;
 	}
 
 	/**
@@ -246,24 +285,223 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @return string
 	 */
 	private function get_pdf_path( $attendee_id ) {
-		return $this->uploads_directory_path() . $this->get_pdf_name( $attendee_id ) . '.pdf';
+		return $this->uploads_directory_path() . $this->get_pdf_name( $attendee_id );
 	}
 
 	/**
-	 * Get the full URL to the PDF file, including ".pdf" at the end.
+	 * Get the Unique ID for the given Attendee ID.
 	 *
-	 * Example result: http://yoursite.com/wp-content/uploads/tribe_tickets_xh2msh810osajsz.pdf?tribe_tickets_pdf_attendee=824
+	 * Lookup Unique ID in the database. If it does not exist yet, generate it
+	 * and save it to the database for future lookups.
+	 *
+	 * @param int $attendee_id
+	 *
+	 * @return string
+	 */
+	private function get_unique_id_from_attendee_id( $attendee_id ) {
+		$unique_id = get_post_meta( $attendee_id, $this->pdf_ticket_meta_key, true );
+
+		if ( empty( $unique_id ) ) {
+			$unique_id = uniqid( '', true );
+
+			// uniqid() with more_entropy results in something like '59dfc07503b009.71316471'
+			$unique_id = str_replace( '.', '', $unique_id );
+
+			/**
+			 * Filter to customize the Unique ID part of the generated PDF file name.
+			 *
+			 * If you use this filter, you may also need to use the
+			 * tribe_ext_pdf_tickets_unique_id_regex filter.
+			 *
+			 * @var $unique_id
+			 * @var $attendee_id
+			 */
+			$unique_id = apply_filters( 'tribe_ext_pdf_tickets_unique_id', $unique_id, $attendee_id );
+
+			$unique_id = sanitize_file_name( $unique_id );
+
+			add_post_meta( $attendee_id, $this->pdf_ticket_meta_key, $unique_id, true );
+		}
+
+		return $unique_id;
+	}
+
+	/**
+	 * @param $unique_id
+	 *
+	 * @return int
+	 */
+	private function get_attendee_id_from_unique_id( $unique_id ) {
+		$args = array(
+			// cannot use 'post_type' => 'any' because these post types have `exclude_from_search` set to TRUE (because `public` is FALSE)
+			'post_type'      => array(
+				Tribe__Tickets__RSVP::ATTENDEE_OBJECT,
+				Tribe__Tickets_Plus__Commerce__WooCommerce__Main::ATTENDEE_OBJECT,
+				Tribe__Tickets_Plus__Commerce__EDD__Main::ATTENDEE_OBJECT,
+			),
+			'nopaging'       => true,
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'   => $this->pdf_ticket_meta_key,
+					'value' => $unique_id,
+				)
+			)
+		);
+
+		$attendee_id_array = get_posts( $args );
+
+		if ( empty( $attendee_id_array[0] ) ) {
+			$attendee_id = 0;
+		} else {
+			$attendee_id = $attendee_id_array[0];
+		}
+
+		return $attendee_id;
+	}
+
+	/**
+	 * Get the true full URL to the PDF file, including ".pdf" at the end.
+	 *
+	 * Example result: http://example.com/wp-content/uploads/tribe_tickets_{unique_id}.pdf
 	 *
 	 * @param $attendee_id
 	 *
 	 * @return string
 	 */
-	private function get_pdf_url( $attendee_id ) {
-		$file_url = $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id ) . '.pdf';
+	private function get_direct_pdf_url( $unique_id ) {
+		$attendee_id = $this->get_attendee_id_from_unique_id( $unique_id );
 
-		$file_url = add_query_arg( $this->pdf_url_query_arg_key, $attendee_id, $file_url );
+		$file_url = $this->uploads_directory_url() . $this->get_pdf_name( $attendee_id );
 
 		return esc_url( $file_url );
+	}
+
+	/**
+	 * The URL rewrite base for the file download.
+	 *
+	 * Example: tickets_download
+	 *
+	 * @return string
+	 */
+	private function get_download_base_slug() {
+		$tickets_bases = Tribe__Tickets__Tickets_View::instance()->add_rewrite_base_slug();
+
+		$base = sprintf( '%s_%s',
+			sanitize_title_with_dashes( $tickets_bases['tickets'][0] ),
+			sanitize_key( __( 'download', 'tribe-extension' ) )
+		);
+
+		return $base;
+	}
+
+	/**
+	 * Get the public-facing URL to the PDF file.
+	 *
+	 * Example: http://example.com/tickets_download/{unique_id}
+	 *
+	 * @param $attendee_id
+	 *
+	 * @return string
+	 */
+	private function get_pdf_link( $attendee_id ) {
+		$unique_id = $this->get_unique_id_from_attendee_id( $attendee_id );
+
+		$url = home_url( '/' ) . $this->get_download_base_slug();
+
+		$url = trailingslashit( $url ) . $unique_id;
+
+		return esc_url( $url );
+	}
+
+	/**
+	 * The regex to determine if a string is in the proper format to be a
+	 * Unique ID in the context of this extension.
+	 *
+	 * @return string
+	 */
+	protected function get_unique_id_regex() {
+		/**
+		 * Filter to adapt the regex for matching Unique ID.
+		 *
+		 * Use in conjunction with the tribe_ext_pdf_tickets_unique_id filter.
+		 *
+		 * @var $regex_pattern
+		 */
+		$unique_id_regex = apply_filters( 'tribe_ext_pdf_tickets_unique_id_regex', '[a-z0-9]{1,}' );
+
+		return (string) $unique_id_regex;
+	}
+
+	/**
+	 * Add the needed WordPress rewrite rules.
+	 *
+	 * example.com/tickets_download/{unique_id} (without trailing slash) goes
+	 * to the PDF file, and
+	 * example.com/tickets_download/ (with or without trailing slash) goes to
+	 * the site's homepage for the sake of search engines or curious users
+	 * exploring hackable URLs.
+	 */
+	public function add_pdf_file_rewrite_rules() {
+		// example.com/tickets_download/{unique_id} (without trailing slash)
+		$regex_for_file = sprintf( '^%s/(%s)[/]?$', $this->get_download_base_slug(), $this->get_unique_id_regex() );
+
+		$query_for_file = sprintf( 'index.php?%s=$matches[1]', $this->pdf_unique_id_query_arg_key );
+
+		add_rewrite_rule( $regex_for_file, $query_for_file, 'top' );
+
+		// example.com/tickets_download/ (optional trailing slash) to home page
+		add_rewrite_rule( '^' . $this->get_download_base_slug() . '[/]?$', 'index.php', 'top' );
+	}
+
+	/**
+	 * Add the needed WordPress query variable to get the Unique ID.
+	 *
+	 * @param $vars
+	 *
+	 * @return array
+	 */
+	public function add_custom_query_vars( $vars ) {
+		$vars[] = $this->pdf_unique_id_query_arg_key;
+
+		return $vars;
+	}
+
+	/**
+	 * Disable WordPress trying to add a trailing slash to our PDF file URLs.
+	 *
+	 * Example: http://example.com/tickets_download/{unique_id}
+	 * Without the leading ^ because we are comparing against the full URL,
+	 * not creating a rewrite rule. Without the ending $ because we might have a
+	 * URL query string.
+	 *
+	 * @param $redirect_url  The URL with a trailing slash added (in most
+	 *                       setups).
+	 * @param $requested_url Our unmodified URL--without a trailing slash.
+	 *
+	 * @return bool|string
+	 */
+	public function make_non_trailing_slash_the_canonical( $redirect_url, $requested_url ) {
+		$pattern_wo_slash = sprintf( '/\/%s\/(%s)/', $this->get_download_base_slug(), $this->get_unique_id_regex() );
+
+		if ( preg_match( $pattern_wo_slash, $requested_url ) ) {
+			return false;
+		}
+
+		return $redirect_url;
+	}
+
+
+	/**
+	 * Flush WordPress rewrite rules when this extension is activated.
+	 *
+	 * @link https://codex.wordpress.org/Function_Reference/register_post_type#Flushing_Rewrite_on_Activation
+	 */
+	public function flush_rewrite_rules_on_activation() {
+		$this->add_pdf_file_rewrite_rules();
+
+		flush_rewrite_rules();
 	}
 
 	/**
@@ -423,7 +661,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 		$output = sprintf(
 			'<a href="%s"',
-			esc_attr( $this->get_pdf_url( $attendee_id ) )
+			esc_url( $this->get_pdf_link( $attendee_id ) )
 		);
 
 		if ( ! empty( $target ) ) {
@@ -544,6 +782,18 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
+	 * Tell WordPress to 404 instead of continuing loading the template it would
+	 * otherwise load, such as matching lower-priority rewrite rule matches
+	 * (e.g. page or attachment).
+	 */
+	private function force_404() {
+		global $wp_query;
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
+	}
+
+	/**
 	 * Create and upload a 404'd PDF Ticket, then redirect to it now that
 	 * it exists.
 	 *
@@ -554,44 +804,84 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @see Tribe__Extension__PDF_Tickets::do_upload_pdf()
 	 */
-	public function if_pdf_url_404_upload_pdf_then_reload() {
-		if ( ! is_404() ) {
+	public function load_pdf() {
+		// Must use get_query_var() because of working with WordPress' internal (private) rewrites, and tribe_get_request_var() can only get the $_GET superglobal.
+		$unique_id = get_query_var( $this->pdf_unique_id_query_arg_key );
+
+		if ( empty( $unique_id ) ) {
+			// do not force 404 at this point
 			return;
 		}
 
-		if ( ! function_exists( 'tribe_get_request_var' ) ) {
-			return;
-		}
-
-		// Check if we already retried, in which case we should stop retrying
-		$already_retried = tribe_get_request_var( $this->pdf_retry_url_query_arg_key );
-
-		if ( ! empty( $already_retried ) ) {
-			return;
-		}
-
-		// Get the Attendee ID and then try for the first time
-		$attendee_id = tribe_get_request_var( $this->pdf_url_query_arg_key );
+		$attendee_id = $this->get_attendee_id_from_unique_id( $unique_id );
 
 		if ( empty( $attendee_id ) ) {
+			$this->force_404();
+
+			return;
+		} else {
+			// if we have an Attendee ID but the URL ends with a backslash (wouldn't happen if we already redirected to create and retry), then redirect to version without trailing slash (for canonical purposes). Does not intercept if manually adding an unexpected query var but that's not a worry since this is already unlikely and just for canonical purposes.
+			if ( '/' === substr( $_SERVER['REQUEST_URI'], - 1, 1 ) ) {
+				$url = rtrim( $_SERVER['REQUEST_URI'], '/' );
+
+				wp_redirect( esc_url_raw( $url ), 301 ); // Moved Permanently
+				exit;
+			}
+		}
+
+		$file_name = $this->get_pdf_path( $attendee_id );
+
+		if ( empty( $file_name ) ) {
+			$this->force_404();
+
 			return;
 		}
 
-		$this->do_upload_pdf( $attendee_id, false );
+		if ( file_exists( $file_name ) ) {
+			header( 'Content-Type: application/pdf', true );
 
-		/**
-		 * Redirect to retrying reloading the PDF.
-		 *
-		 * Cache buster and technically a new URL so status code 307
-		 * Temporary Redirect applies.
-		 *
-		 * @link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
-		 */
-		$url = add_query_arg( $this->pdf_retry_url_query_arg_key, time() );
+			header( "X-Robots-Tag: none", true );
 
-		wp_redirect( esc_url_raw( $url ), 307 );
+			// inline tells the browser to display, not download, but some browsers (or browser settings) will always force downloading
+			$disposition = sprintf( 'Content-Disposition: inline; filename="%s"', $this->get_pdf_name( $attendee_id ) );
+			header( $disposition, true );
 
-		exit;
+			// Optional but enables keeping track of the download progress and detecting if the download was interrupted
+			header( 'Content-Length: ' . filesize( $file_name ), true );
+
+			readfile( $file_name );
+			exit;
+		}
+
+
+		// only retry once
+		if ( ! empty( get_query_var( $this->pdf_retry_url_query_arg_key ) ) ) {
+			$this->force_404();
+
+			return;
+		} else {
+			$created_pdf = $this->do_upload_pdf( $attendee_id, false );
+
+			if ( false === $created_pdf ) {
+				$this->force_404();
+
+				return;
+			} else {
+				/**
+				 * Redirect to retrying reloading the PDF.
+				 *
+				 * Cache buster and technically a new URL so status code 307
+				 * Temporary Redirect applies.
+				 *
+				 * @link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
+				 */
+				$url = add_query_arg( $this->pdf_retry_url_query_arg_key, time(), $this->get_pdf_link( $attendee_id ) );
+
+				wp_redirect( esc_url_raw( $url ), 307 );
+
+				exit;
+			}
+		}
 	}
 
 }
