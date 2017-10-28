@@ -771,7 +771,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * match the documentation.
 		 * 'c' mode sets the mPDF Mode to use onlyCoreFonts so that we do not
 		 * need to include any fonts (like the dejavu... ones) in
-		 * vendor/mpdf/ttfontdata
+		 * vendor/mpdf/mpdf/ttfonts
+		 * Therefore, this entire ttfonts directory is non-existent in the .zip
+		 * build via Composer, which changes saves over 90 MB disk space
+		 * unzipped and the .zip itself goes from over 40 MB to under 3 MB.
 		 *
 		 * @link https://mpdf.github.io/reference/mpdf-variables/overview.html
 		 * @link https://github.com/mpdf/mpdf/pull/490

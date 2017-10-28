@@ -19,7 +19,8 @@
       "README.md",
       "*.zip",
       "composer.json",
-      "composer.lock"
+      "composer.lock",
+      "**/ttfonts"
     ]
   }
 }
