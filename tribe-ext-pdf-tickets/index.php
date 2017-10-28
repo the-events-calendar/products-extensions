@@ -776,7 +776,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * @link https://mpdf.github.io/reference/mpdf-variables/overview.html
 		 * @link https://github.com/mpdf/mpdf/pull/490
 		 */
-		$mpdf = new \Mpdf\Mpdf( array( 'c' ) );
+		$mpdf = new \Mpdf\Mpdf( array( 'mode' => 'c' ) );
 
 		$mpdf->WriteHTML( $html );
 
