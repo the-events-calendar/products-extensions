@@ -94,20 +94,20 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	/**
 	 * Extension initialization and hooks.
 	 *
-	 * PHP 5.3.7+ is required to avoid blank page content via mPDF.
+	 * mPDF version 7.0+ requires PHP 5.6+ with the mbstring and gd extensions.
 	 * Permalinks are required to be set in order to use this plugin. If they
 	 * are not set, display an informative admin error with a link to the
 	 * Permalink Settings admin screen and do not load the rest of this plugin.
-	 *
-	 * @link https://mpdf.github.io/troubleshooting/known-issues.html
 	 */
 	public function init() {
-		if ( version_compare( PHP_VERSION, '5.3.7', '<' ) ) {
-			_doing_it_wrong(
-				$this->get_name(),
-				'This Extension requires PHP 5.3.7 or newer to work. Please contact your website host and inquire about updating PHP.',
-				'1.0.0'
-			);
+		if ( version_compare( PHP_VERSION, '5.6', '<' ) ) {
+			$message = '<p>' . $this->get_name();
+
+			$message .= __( ' requires PHP 5.6 or newer to work (as well as the `mbstring` and `gd` PHP extensions). Please contact your website host and inquire about updating PHP.', 'tribe-extension' );
+
+			$message .= '</p>';
+
+			tribe_notice( $this->get_name(), $message, 'type=error' );
 
 			return;
 		}
@@ -172,17 +172,6 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
-	 * The absolute path to the mPDF library directory.
-	 *
-	 * @return string
-	 */
-	private function mpdf_lib_dir() {
-		$path = __DIR__ . '/vendor/mpdf';
-
-		return trailingslashit( $path );
-	}
-
-	/**
 	 * Get the absolute path to the WordPress uploads directory,
 	 * with a trailing slash.
 	 *
@@ -199,7 +188,17 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	protected function uploads_directory_path() {
 		$upload_dir = wp_upload_dir();
 
-		return trailingslashit( $upload_dir['basedir'] );
+		$upload_dir = trailingslashit( $upload_dir['basedir'] );
+
+		/**
+		 * Filter to change the path to where PDFs will be created.
+		 *
+		 * This could be useful if you wanted to tack on 'pdfs/' to put them in
+		 * a subdirectory of the Uploads directory.
+		 *
+		 * @var $upload_dir
+		 */
+		return apply_filters( 'tribe_ext_pdf_tickets_uploads_dir_path', $upload_dir );
 	}
 
 	/**
@@ -760,7 +759,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * @return mPDF
 	 */
 	protected function get_mpdf( $html ) {
-		require_once( $this->mpdf_lib_dir() . 'mpdf.php' );
+		require_once( __DIR__ . '/vendor/autoload.php' );
+
+		// to avoid this fatal error: https://github.com/mpdf/mpdf/issues/524
+		$html = str_ireplace( ' !important', '', $html );
 
 		/**
 		 * Creating and setting the PDF
@@ -774,7 +776,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * @link https://mpdf.github.io/reference/mpdf-variables/overview.html
 		 * @link https://github.com/mpdf/mpdf/pull/490
 		 */
-		$mpdf = new mPDF( 'c' );
+		$mpdf = new \Mpdf\Mpdf( array( 'c' ) );
 
 		$mpdf->WriteHTML( $html );
 
