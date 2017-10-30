@@ -1,7 +1,7 @@
 /**
  * @file This file overrides The Events Calendar PRO's tribe-events-ajax-maps.js and contains all map view specific javascript.
  * This file should load after all vendors and core events javascript.
- * @version 1.0
+ * @version 3.0
  */
 
 (function( window, document, $, td, te, tf, tg, ts, tt, config, dbug ) {
@@ -55,7 +55,7 @@
 
 			var content_title = title;
 
-      var content = content_title;
+			var content = content_title;
 
 			if ( address ) {
 				content = content + "<br/>" + "Address: " + address;
@@ -133,8 +133,8 @@
 
 		if ( tt.map_view() ) {
 
-			var tribe_is_paged = tf.get_url_param( 'tribe_paged' );
-			var	tribe_display = tf.get_url_param( 'tribe_event_display' );
+			var tribe_is_paged = tf.get_url_param( 'tribe_paged' ),
+				tribe_display = tf.get_url_param( 'tribe_event_display' );
 
 			if ( tribe_is_paged ) {
 				ts.paged = tribe_is_paged;
@@ -366,45 +366,44 @@
 						$( '#tribe-events-header' ).hide();
 					}
 
-     /**
-     * Calls the filterMarkers function
-     */
+					/**
+					 * Calls the filterMarkers function
+					 */
 
-     var marker_filter = response.markers;
-     var filteredTgMarkers = FilterMarkers( marker_filter );
+					var marker_filter = response.markers;
+					var filteredTgMarkers = FilterMarkers( marker_filter );
 
-     $.each( filteredTgMarkers, function( i, e )
-     {
-       tf.map_add_marker( e.lat, e.lng, e.title, e.address );
-     } );
+					$.each( filteredTgMarkers, function( i, e ) {
+						tf.map_add_marker( e.lat, e.lng, e.title, e.address );
+					} );
 
-     /**
-     * @function FilterMarkers
-     * @desc FilterMarkers filter by latitude and longitude and concatenate titles
-     */
+					/**
+					 * @function FilterMarkers
+					 * @desc FilterMarkers filter by latitude and longitude and concatenate titles
+					 */
 
-     function FilterMarkers( tgMarkers ) {
+					function FilterMarkers( tgMarkers ) {
 
-       var markers_list = [];
-       for ( var i = 0; i < tgMarkers.length; i++ ) {
-         var exist = false;
-         var existingMarker = tgMarkers[i];
+						var markers_list = [];
+						for ( var i = 0; i < tgMarkers.length; i++ ) {
+							var exist = false;
+							var existingMarker = tgMarkers[i];
 
-         markers_list.forEach( function( item ) {
-           if( existingMarker.lat == item.lat && existingMarker.lng == item.lng && existingMarker.title != item.title ) {
-             exist = true;
-             item.title = "<center>" + item.title + existingMarker.title.link( existingMarker.link ) + "<center>";
-           }
-         });
+							markers_list.forEach( function( item ) {
+								if( existingMarker.lat == item.lat && existingMarker.lng == item.lng && existingMarker.title != item.title ) {
+									exist = true;
+									item.title = "<center>" + item.title + existingMarker.title.link( existingMarker.link ) + "<center>";
+								}
+							});
 
-         if( !exist ) {
-           var title ="";
-           title = "<center>" + title + existingMarker.title.link( existingMarker.link ) + "</center>";
-           markers_list.push( { lat: existingMarker.lat, lng: existingMarker.lng, "title": title, address : existingMarker.address } );
-         }
-       }
-       return markers_list;
-     }
+							if( !exist ) {
+								var title ="";
+								title = "<center>" + title + existingMarker.title.link( existingMarker.link ) + "</center>";
+								markers_list.push( { lat: existingMarker.lat, lng: existingMarker.lng, "title": title, address : existingMarker.address } );
+							}
+						}
+						return markers_list;
+					}
 
 					if ( tt.pushstate ) {
 
@@ -413,7 +412,7 @@
 
 						if ( ts.do_string ) {
 							// strip the baseurl from the push state URL
-						 var params = ts.params.replace( /&?baseurl=[^&]*/i, '' );
+							var params = ts.params.replace( /&?baseurl=[^&]*/i, '' );
 
 							history.pushState( {
 								"tribe_paged" : ts.paged,
