@@ -39,9 +39,9 @@
 			var myLatlng = new google.maps.LatLng( lat, lng );
 
 			var marker = {
-					position: myLatlng,
-					map     : tg.map
-				};
+				position: myLatlng,
+				map     : tg.map
+			};
 
 			// If we have a Map Pin set, we use it
 			if ( 'undefined' !== GeoLoc.pin_url && GeoLoc.pin_url ) {
@@ -273,10 +273,10 @@
 			}
 
 			if ( td.default_permalinks ) {
-				if( !ts.params.hasOwnProperty( 'post_type' ) ){
+				if ( ! ts.params.hasOwnProperty( 'post_type' ) ) {
 					ts.params['post_type'] = config.events_post_type;
 				}
-				if( !ts.params.hasOwnProperty( 'eventDisplay' ) ){
+				if ( ! ts.params.hasOwnProperty( 'eventDisplay' ) ) {
 					ts.params['eventDisplay'] = 'map';
 				}
 			}
@@ -318,10 +318,10 @@
 
 		function tribe_map_processOption() {
 
-			if ( !ts.popping ) {
+			if ( ! ts.popping ) {
 				tribe_generate_map_params();
 				ts.pushstate = false;
-				if ( !ts.initial_load ) {
+				if ( ! ts.initial_load ) {
 					ts.do_string = true;
 				}
 			}
@@ -385,21 +385,26 @@
 					function FilterMarkers( tgMarkers ) {
 
 						var markers_list = [];
-						for ( var i = 0; i < tgMarkers.length; i++ ) {
+						for ( var i = 0; i < tgMarkers.length; i ++ ) {
 							var exist = false;
 							var existingMarker = tgMarkers[i];
 
 							markers_list.forEach( function( item ) {
-								if( existingMarker.lat == item.lat && existingMarker.lng == item.lng && existingMarker.title != item.title ) {
+								if ( existingMarker.lat == item.lat && existingMarker.lng == item.lng && existingMarker.title != item.title ) {
 									exist = true;
 									item.title = "<center>" + item.title + existingMarker.title.link( existingMarker.link ) + "<center>";
 								}
-							});
+							} );
 
-							if( !exist ) {
-								var title ="";
+							if ( ! exist ) {
+								var title = "";
 								title = "<center>" + title + existingMarker.title.link( existingMarker.link ) + "</center>";
-								markers_list.push( { lat: existingMarker.lat, lng: existingMarker.lng, "title": title, address : existingMarker.address } );
+								markers_list.push( {
+									lat    : existingMarker.lat,
+									lng    : existingMarker.lng,
+									"title": title,
+									address: existingMarker.address
+								} );
 							}
 						}
 						return markers_list;
@@ -453,7 +458,7 @@
 				tg.map.setCenter( center );
 			} );
 
-			$( '#tribe-events' ).on( 'click', 'li.tribe-events-nav-next a',function( e ) {
+			$( '#tribe-events' ).on( 'click', 'li.tribe-events-nav-next a', function( e ) {
 				e.preventDefault();
 				if ( ts.ajax_running ) {
 					return;
@@ -463,11 +468,11 @@
 						ts.view = 'map';
 					}
 					else {
-						ts.paged--;
+						ts.paged --;
 					}
 				}
 				else {
-					ts.paged++;
+					ts.paged ++;
 				}
 				ts.popping = false;
 				if ( tt.pushstate ) {
@@ -494,11 +499,11 @@
 						ts.view = 'past';
 					}
 					else {
-						ts.paged--;
+						ts.paged --;
 					}
 				}
 				else {
-					ts.paged++;
+					ts.paged ++;
 				}
 				ts.popping = false;
 				if ( tt.pushstate ) {
@@ -642,7 +647,6 @@
 								tf.print_geo_options();
 								tribe_test_location();
 								centerMap();
-
 
 							}
 							else {
