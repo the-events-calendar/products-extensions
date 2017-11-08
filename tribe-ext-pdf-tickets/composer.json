@@ -22,5 +22,6 @@
       "composer.lock",
       "**/ttfonts"
     ]
-  }
+  },
+  "optimize-autoloader": true
 }
