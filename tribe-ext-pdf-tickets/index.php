@@ -112,7 +112,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			return;
 		}
 
-		if ( ! empty( get_option( 'permalink_structure' ) ) ) {
+		$permalink_structure = get_option( 'permalink_structure' );
+		if ( ! empty( $permalink_structure ) ) {
 			// Event Tickets
 			add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'pdf_attendee_table_row_actions' ), 0, 2 );
 
@@ -860,7 +861,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 
 		// only retry once
-		if ( ! empty( get_query_var( $this->pdf_retry_url_query_arg_key ) ) ) {
+		$retry_query_var = get_query_var( $this->pdf_retry_url_query_arg_key );
+		if ( ! empty( $retry_query_var ) ) {
 			$this->force_404();
 
 			return;
