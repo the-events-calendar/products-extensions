@@ -74,7 +74,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * @link https://developer.wordpress.org/reference/functions/flush_rewrite_rules/#comment-597
 		 */
 		register_activation_hook( __FILE__, array( $this, 'flush_rewrite_rules_on_activation' ) );
-		register_deactivation_hook( __FILE__, array( $this, 'flush_rewrite_rules' ) );
+		register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 	}
 
 	/**
