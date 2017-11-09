@@ -197,7 +197,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * This could be useful if you wanted to tack on 'pdfs/' to put them in
 		 * a subdirectory of the Uploads directory.
 		 *
-		 * @var $upload_dir
+		 * @param $upload_dir
 		 */
 		return apply_filters( 'tribe_ext_pdf_tickets_uploads_dir_path', $upload_dir );
 	}
@@ -234,7 +234,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * Filter to change the string before the Unique ID part of the
 		 * generated file name.
 		 *
-		 * @var $prefix
+		 * @param $prefix
 		 */
 		$prefix = apply_filters( 'tribe_ext_pdf_tickets_file_name_prefix', 'tribe_tickets_' );
 
@@ -313,8 +313,8 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 			 * If you use this filter, you may also need to use the
 			 * tribe_ext_pdf_tickets_unique_id_regex filter.
 			 *
-			 * @var $unique_id
-			 * @var $attendee_id
+			 * @param $unique_id
+			 * @param $attendee_id
 			 */
 			$unique_id = apply_filters( 'tribe_ext_pdf_tickets_unique_id', $unique_id, $attendee_id );
 
@@ -427,7 +427,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 *
 		 * Use in conjunction with the tribe_ext_pdf_tickets_unique_id filter.
 		 *
-		 * @var $regex_pattern
+		 * @param $regex_pattern
 		 */
 		$unique_id_regex = apply_filters( 'tribe_ext_pdf_tickets_unique_id_regex', '[a-z0-9]{1,}' );
 
@@ -584,10 +584,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * Might be useful if you want the PDF file added to the Media Library
 		 * via wp_insert_attachment(), for example.
 		 *
-		 * @var $ticket_class
-		 * @var $event_id
-		 * @var $attendee_id
-		 * @var $file_name
+		 * @param $ticket_class
+		 * @param $event_id
+		 * @param $attendee_id
+		 * @param $file_name
 		 */
 		do_action( 'tribe_ext_pdf_tickets_uploaded_pdf', $ticket_class, $event_id, $attendee_id, $file_name );
 
@@ -595,11 +595,11 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		 * Filter to disable PDF email attachments, either entirely (just pass
 		 * false) or per event, attendee, ticket type, or some other logic.
 		 *
-		 * @var $email
-		 * @var $ticket_class
-		 * @var $event_id
-		 * @var $attendee_id
-		 * @var $file_name
+		 * @param $email
+		 * @param $ticket_class
+		 * @param $event_id
+		 * @param $attendee_id
+		 * @param $file_name
 		 */
 		$email = (bool) apply_filters( 'tribe_ext_pdf_tickets_attach_to_email', $email, $ticket_class, $event_id, $attendee_id, $file_name );
 
