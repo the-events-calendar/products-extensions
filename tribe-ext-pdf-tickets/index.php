@@ -617,6 +617,17 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 				add_filter( 'edd_ticket_receipt_attachments', array( $this, 'email_attach_pdf' ) );
 			} else {
 				// unknown ticket type so no emailing to do
+
+				/**
+				 * Action hook that fires during email attaching but only for
+				 * unknown ticket types.
+				 *
+				 * @param $ticket_class
+				 * @param $event_id
+				 * @param $attendee_id
+				 * @param $file_name
+				 */
+				do_action( 'tribe_ext_pdf_tickets_uploaded_to_email_unknown_ticket_type', $ticket_class, $event_id, $attendee_id, $file_name );
 			}
 		}
 
