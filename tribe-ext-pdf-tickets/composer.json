@@ -20,7 +20,7 @@
       "*.zip",
       "composer.json",
       "composer.lock",
-      "**/ttfonts"
+      "vendor/mpdf/**/ttfonts"
     ]
   },
   "optimize-autoloader": true
