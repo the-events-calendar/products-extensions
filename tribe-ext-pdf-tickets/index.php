@@ -68,12 +68,15 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$this->set_url( 'https://theeventscalendar.com/extensions/pdf-tickets/' );
 
 		/**
-		 * When plugin is activated, add rewrite rules and then flush rewrite
-		 * rules. When plugin is deactivated, just flush rewrite rules.
+		 * Ideally, we would only flush rewrite rules on plugin activation and
+		 * deactivation, but we cannot on activation due to the way extensions
+		 * get loaded. Therefore, we flush rewrite rules a different way while
+		 * plugin is activated. The deactivation hook does work inside the
+		 * extension class, though.
 		 *
 		 * @link https://developer.wordpress.org/reference/functions/flush_rewrite_rules/#comment-597
 		 */
-		register_activation_hook( __FILE__, array( $this, 'flush_rewrite_rules_on_activation' ) );
+		add_action( 'admin_init', array( $this, 'admin_flush_rewrite_rules_if_needed' ) );
 		register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 	}
 
@@ -435,6 +438,19 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	}
 
 	/**
+	 * Regex for the file download rewrite rule.
+	 *
+	 * example.com/tickets_download/{unique_id} (without trailing slash)
+	 *
+	 * @return string
+	 */
+	protected function get_file_rewrite_regex() {
+		$regex_for_file = sprintf( '^%s/(%s)[/]?$', $this->get_download_base_slug(), $this->get_unique_id_regex() );
+
+		return $regex_for_file;
+	}
+
+	/**
 	 * Add the needed WordPress rewrite rules.
 	 *
 	 * example.com/tickets_download/{unique_id} (without trailing slash) goes
@@ -444,12 +460,9 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 * exploring hackable URLs.
 	 */
 	public function add_pdf_file_rewrite_rules() {
-		// example.com/tickets_download/{unique_id} (without trailing slash)
-		$regex_for_file = sprintf( '^%s/(%s)[/]?$', $this->get_download_base_slug(), $this->get_unique_id_regex() );
-
 		$query_for_file = sprintf( 'index.php?%s=$matches[1]', $this->pdf_unique_id_query_arg_key );
 
-		add_rewrite_rule( $regex_for_file, $query_for_file, 'top' );
+		add_rewrite_rule( $this->get_file_rewrite_regex(), $query_for_file, 'top' );
 
 		// example.com/tickets_download/ (optional trailing slash) to home page
 		add_rewrite_rule( '^' . $this->get_download_base_slug() . '[/]?$', 'index.php', 'top' );
@@ -494,14 +507,31 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 
 
 	/**
-	 * Flush WordPress rewrite rules when this extension is activated.
-	 *
-	 * @link https://codex.wordpress.org/Function_Reference/register_post_type#Flushing_Rewrite_on_Activation
+	 * Ideally, we would only flush rewrite rules on plugin activation, but we
+	 * cannot use register_activation_hook() due to the timing of when
+	 * extensions load. Therefore, we flush rewrite rules on every visit to the
+	 * wp-admin Plugins screen (where we'd expect you to be if you just
+	 * activated a plugin)... only if our rewrite rule is not already in the
+	 * rewrite rules array.
 	 */
-	public function flush_rewrite_rules_on_activation() {
-		$this->add_pdf_file_rewrite_rules();
+	public function admin_flush_rewrite_rules_if_needed() {
+		global $pagenow;
 
-		flush_rewrite_rules();
+		if ( 'plugins.php' != $pagenow ) {
+			return;
+		}
+
+		$rewrite_rules = get_option( 'rewrite_rules' );
+
+		if ( empty( $rewrite_rules ) ) {
+			return;
+		}
+
+		if ( ! array_key_exists( $this->get_file_rewrite_regex(), $rewrite_rules ) ) {
+			$this->add_pdf_file_rewrite_rules();
+
+			flush_rewrite_rules();
+		}
 	}
 
 	/**
