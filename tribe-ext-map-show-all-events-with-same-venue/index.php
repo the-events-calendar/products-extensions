@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name:     The Events Calendar PRO Extension: Displays multiple events with the same venue in Google Maps tooltips.
- * Description:     Show multiple events with the same venue in Google Maps tooltips.
+ * Plugin Name:     The Events Calendar PRO Extension: Display multiple events with the same venue in Map tooltips.
+ * Description:     Show multiple events with the same venue in PRO's map tooltips.
  * Version:         1.0.0
  * Extension Class: Tribe__Extension__Multiple_Events_Same_Venue
  * Author:          Modern Tribe, Inc.
@@ -46,12 +46,19 @@ class Tribe__Extension__Multiple_Events_Same_Venue extends Tribe__Extension {
 	}
 
 	public function enqueue_tribe_new_pro_geoloc() {
-		$url  = apply_filters( 'tribe_events_pro_google_maps_api', 'https://maps.google.com/maps/api/js' );
-		$path = plugin_dir_url( __FILE__ ) . '/src/tribe-events-ajax-maps.min.js';
+		$url = apply_filters( 'tribe_events_pro_google_maps_api', 'https://maps.google.com/maps/api/js' );
+
+		/**
+		 * If the SCRIPT_DEBUG constant is defined, load the full version of the tribe-events-ajax-maps.js file,
+		 * otherwise load the minified version.
+		 */
+		$min  = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+		$path = plugin_dir_url( __FILE__ ) . '/src/tribe-events-ajax-maps' . $min . '.js';
+
 		wp_register_script( 'tribe-events-new-geoloc', $path, array(
 			'tribe-gmaps',
 			Tribe__Events__Template_Factory::get_placeholder_handle(),
-		), '1.0.0' );
+		), $this->get_version() );
 		wp_enqueue_script( 'tribe-events-new-geoloc' );
 
 		$http   = is_ssl() ? 'https' : 'admin';

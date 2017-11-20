@@ -1,7 +1,7 @@
 /**
  * @file This file overrides The Events Calendar PRO's tribe-events-ajax-maps.js and contains all map view specific javascript.
  * This file should load after all vendors and core events javascript.
- * @version 3.0
+ * @version 1.0
  */
 
 (function( window, document, $, td, te, tf, tg, ts, tt, config, dbug ) {
