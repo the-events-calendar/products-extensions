@@ -24,5 +24,5 @@ Like some of the other files you see in this GitHub repository, this README.md f
 ### Known Issues ###
 
 mPDF has these known issues, for which you might need to modify the Composer-generated mpdf directory's files **before distributing**:
-* [https://github.com/mpdf/mpdf/pull/490/files](https://github.com/mpdf/mpdf/pull/490/files) must be manually performed after generating via Composer **prior to zipping.** See that pull request's comments for additional context.
+* [https://github.com/mpdf/mpdf/pull/490/files](https://github.com/mpdf/mpdf/pull/490/files) must be manually performed **after** generating via Composer and **prior to zipping via Composer.** See that pull request's comments for additional context.
 * Keep an eye on [https://github.com/mpdf/mpdf/issues/524](https://github.com/mpdf/mpdf/issues/524) so our extension's *get_mpdf()* method can be updated once that's fixed.
