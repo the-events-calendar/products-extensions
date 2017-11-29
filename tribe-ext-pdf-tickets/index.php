@@ -118,7 +118,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 		$permalink_structure = get_option( 'permalink_structure' );
 		if ( ! empty( $permalink_structure ) ) {
 			// Event Tickets
-			add_action( 'event_tickets_attendees_table_row_actions', array( $this, 'pdf_attendee_table_row_actions' ), 0, 2 );
+			add_filter( 'event_tickets_attendees_table_row_actions', array( $this, 'pdf_attendee_table_row_actions' ), 0, 2 );
 
 			add_action( 'event_tickets_orders_attendee_contents', array( $this, 'pdf_attendee_table_row_action_contents' ), 10, 2 );
 
@@ -737,10 +737,10 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	 *
 	 * @see Tribe__Extension__PDF_Tickets::ticket_link()
 	 */
-	public function pdf_attendee_table_row_actions( $actions, $item ) {
-		$actions[] = $this->ticket_link( $item['attendee_id'] );
+	public function pdf_attendee_table_row_actions( $row_actions, $item ) {
+		$row_actions[] = $this->ticket_link( $item['attendee_id'] );
 
-		return $actions;
+		return $row_actions;
 	}
 
 	/**
