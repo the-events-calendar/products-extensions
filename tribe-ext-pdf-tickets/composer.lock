@@ -8,22 +8,22 @@
     "packages": [
         {
             "name": "mpdf/mpdf",
-            "version": "v7.0.1",
+            "version": "7.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mpdf/mpdf.git",
-                "reference": "20bea30b1758e0047d59f32766f35cb93a7f84c4"
+                "reference": "78e5899101203d9ef5e63316e4748aac1c8c2ec1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mpdf/mpdf/zipball/20bea30b1758e0047d59f32766f35cb93a7f84c4",
-                "reference": "20bea30b1758e0047d59f32766f35cb93a7f84c4",
+                "url": "https://api.github.com/repos/mpdf/mpdf/zipball/78e5899101203d9ef5e63316e4748aac1c8c2ec1",
+                "reference": "78e5899101203d9ef5e63316e4748aac1c8c2ec1",
                 "shasum": ""
             },
             "require": {
                 "ext-gd": "*",
                 "ext-mbstring": "*",
-                "paragonie/random_compat": "^2.0",
+                "paragonie/random_compat": "^1.4|^2.0",
                 "php": "^5.6 || ~7.0.0 || ~7.1.0 || ~7.2.0",
                 "psr/log": "^1.0",
                 "setasign/fpdi": "1.6.*"
@@ -71,7 +71,7 @@
                 "php",
                 "utf-8"
             ],
-            "time": "2017-10-20T19:45:31+00:00"
+            "time": "2017-11-22T20:21:45+00:00"
         },
         {
             "name": "paragonie/random_compat",

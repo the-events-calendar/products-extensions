@@ -15,11 +15,17 @@
   "minimum-stability": "stable",
   "archive": {
     "exclude": [
-      ".gitignore",
-      "README.md",
       "*.zip",
+      ".gitignore",
+      ".github",
+      ".travis.yml",
+      "build-phar.sh",
       "composer.json",
       "composer.lock",
+      "phpunit.xml",
+      "psalm.xml",
+      "README.md",
+      "ruleset.xml",
       "vendor/mpdf/**/ttfonts"
     ]
   },
