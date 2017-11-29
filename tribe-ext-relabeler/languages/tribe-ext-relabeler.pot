@@ -1,0 +1,161 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Project-Id-Version: The Events Calendar Extension: Relabeler\n"
+"POT-Creation-Date: 2017-11-29 13:36+0100\n"
+"PO-Revision-Date: 2017-11-29 13:20+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.3\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-Flags-xgettext: --add-comments=translators:\n"
+"X-Poedit-WPHeader: index.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
+"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.js\n"
+
+#: index.php:92
+msgid "Labels"
+msgstr ""
+
+#: index.php:96
+msgctxt "context"
+msgid "xxx"
+msgstr ""
+
+#: index.php:96
+msgid ""
+"The following fields allow you to change the default labels. Inputting "
+"something other than the default will change that word everywhere it appears."
+msgstr ""
+
+#: index.php:100 index.php:101 index.php:117 index.php:118
+msgid "Events"
+msgstr ""
+
+#: index.php:102
+msgid "Singular label for Events."
+msgstr ""
+
+#: index.php:107 index.php:108
+msgid "event"
+msgstr ""
+
+#: index.php:110
+#, php-format
+msgid ""
+"Lowercase singular label for Events. You might wish to also modify the "
+"\"Events URL Slug\" found in the %s events settings tab."
+msgstr ""
+
+#: index.php:119
+msgid "Plural label for Events."
+msgstr ""
+
+#: index.php:124 index.php:125
+msgid "events"
+msgstr ""
+
+#: index.php:127
+#, php-format
+msgid ""
+"Lowercase plural label for Events. You might wish to also modify the "
+"\"Single Event URL Slug\" found in the %s events settings tab."
+msgstr ""
+
+#: index.php:134 index.php:135
+msgid "Venue"
+msgstr ""
+
+#: index.php:136
+msgid "Singular label for Venues."
+msgstr ""
+
+#: index.php:141 index.php:142
+msgid "venue"
+msgstr ""
+
+#: index.php:143
+msgid "Lowercase singular label for Venues."
+msgstr ""
+
+#: index.php:148 index.php:149
+msgid "Venues"
+msgstr ""
+
+#: index.php:150
+msgid "Plural label for Venues."
+msgstr ""
+
+#: index.php:155 index.php:156
+msgid "venues"
+msgstr ""
+
+#: index.php:157
+msgid "Lowercase plural label for Venues."
+msgstr ""
+
+#: index.php:162 index.php:163
+msgid "Organizer"
+msgstr ""
+
+#: index.php:164
+msgid "Singular label for Organizers."
+msgstr ""
+
+#: index.php:169 index.php:170
+msgid "organizer"
+msgstr ""
+
+#: index.php:171
+msgid "Lowercase singular label for Organizers."
+msgstr ""
+
+#: index.php:176 index.php:177
+msgid "Organizers"
+msgstr ""
+
+#: index.php:178
+msgid "Plural label for Organizers."
+msgstr ""
+
+#: index.php:183 index.php:184
+msgid "organizers"
+msgstr ""
+
+#: index.php:185
+msgid "Lowercase plural label for Organizers."
+msgstr ""
+
+#: index.php:208
+msgid "General"
+msgstr ""
+
+#: src/Tribe/Settings_Helper.php:134
+msgid "Miscellaneous Settings"
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "The Events Calendar Extension: Relabeler"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid ""
+"Adds option to WP Admin > Events > Display for altering labels. For example, "
+"you can change the word \"Events\" to a different word such as \"Gigs\"."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Modern Tribe, Inc."
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "http://m.tri.be/1971"
+msgstr ""
