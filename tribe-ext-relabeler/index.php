@@ -6,6 +6,8 @@
  * Extension Class: Tribe__Extension__Relabeler
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
+ * Text Domain:     tribe-ext-relabeler
+ * Domain Path:     /languages
  * License:         GPLv2 or later
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -52,6 +54,9 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
 		add_action( 'admin_init', array( $this, 'add_settings' ) );
 
+		// Load textdomain
+		add_action( 'plugins_loaded', array( $this, 'tribe_ext_relabeler_load_plugin_textdomain' ) );
+		
 		// Events.
 		add_filter( 'tribe_event_label_singular', array( $this, 'get_event_single' ) );
 		add_filter( 'tribe_event_label_singular_lowercase', array( $this, 'get_event_single_lowercase' ) );
@@ -71,6 +76,14 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 		add_filter( 'tribe_organizer_label_plural_lowercase', array( $this, 'get_organizer_plural_lowercase' ) );
 	}
 
+	
+	/**
+	 * Load textdomain
+	 */
+	public function tribe_ext_relabeler_load_plugin_textdomain() {
+		load_plugin_textdomain( 'tribe-ext-relabeler', FALSE, basename( dirname( __FILE__ ) ) . '/languages' );
+	}
+
 	/**
 	 * Adds settings options
 	 */
@@ -80,17 +93,17 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 		$fields = array(
 			'labels_heading' => array(
 				'type' => 'html',
-				'html' => '<h3>' . esc_html__( 'Labels', 'tribe-extension' ) . '</h3>',
+				'html' => '<h3>' . esc_html__( 'Labels', 'tribe-ext-relabeler' ) . '</h3>',
 			),
 			'labels_helper_text' => array(
 				'type' => 'html',
-				'html' => '<p>' . esc_html__( 'The following fields allow you to change the default labels. Inputting something other than the default will change that word everywhere it appears.', 'tribe-extension' ) . '</p>',
+				'html' => '<p>' . esc_html__( 'The following fields allow you to change the default labels. Inputting something other than the default will change that word everywhere it appears.', 'tribe-ext-relabeler' ) . '</p>',
 			),
 			'label_event_single' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'Events', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'Events', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Singular label for Events.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Singular label for Events.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_event_single_lowercase' => array(
@@ -98,7 +111,7 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 				'label'           => esc_html__( 'event', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'event', 'the-events-calendar' ),
 				'tooltip'         => sprintf(
-					esc_html__( 'Lowercase singular label for Events. You might wish to also modify the "Events URL Slug" found in the %s events settings tab.', 'tribe-extension' ),
+					esc_html__( 'Lowercase singular label for Events. You might wish to also modify the "Events URL Slug" found in the %s events settings tab.', 'tribe-ext-relabeler' ),
 					$this->general_settings_tab_link()
 				),
 				'validation_type' => 'html',
@@ -107,7 +120,7 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 				'type'            => 'text',
 				'label'           => esc_html__( 'Events', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'Events', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Plural label for Events.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Plural label for Events.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_event_plural_lowercase' => array(
@@ -115,7 +128,7 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 				'label'           => esc_html__( 'events', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'events', 'the-events-calendar' ),
 				'tooltip'         => sprintf(
-					esc_html__( 'Lowercase plural label for Events. You might wish to also modify the "Single Event URL Slug" found in the %s events settings tab.','tribe-extension' ),
+					esc_html__( 'Lowercase plural label for Events. You might wish to also modify the "Single Event URL Slug" found in the %s events settings tab.','tribe-ext-relabeler' ),
 					$this->general_settings_tab_link()
 				),
 				'validation_type' => 'html',
@@ -124,56 +137,56 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 				'type'            => 'text',
 				'label'           => esc_html__( 'Venue', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'Venue', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Singular label for Venues.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Singular label for Venues.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_venue_single_lowercase' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'venue', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'venue', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Lowercase singular label for Venues.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Lowercase singular label for Venues.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_venue_plural' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'Venues', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'Venues', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Plural label for Venues.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Plural label for Venues.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_venue_plural_lowercase' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'venues', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'venues', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Lowercase plural label for Venues.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Lowercase plural label for Venues.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_organizer_single' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'Organizer', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'Organizer', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Singular label for Organizers.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Singular label for Organizers.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_organizer_single_lowercase' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'organizer', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'organizer', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Lowercase singular label for Organizers.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Lowercase singular label for Organizers.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_organizer_plural' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'Organizers', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'Organizers', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Plural label for Organizers.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Plural label for Organizers.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 			'label_organizer_plural_lowercase' => array(
 				'type'            => 'text',
 				'label'           => esc_html__( 'organizers', 'the-events-calendar' ),
 				'default'         => esc_attr__( 'organizers', 'the-events-calendar' ),
-				'tooltip'         => esc_html__( 'Lowercase plural label for Organizers.', 'tribe-extension' ),
+				'tooltip'         => esc_html__( 'Lowercase plural label for Organizers.', 'tribe-ext-relabeler' ),
 				'validation_type' => 'html',
 			),
 		);
@@ -196,7 +209,7 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 
 		return sprintf(
 			'<a href="%2$s">%1$s</a>',
-			esc_html__( 'General', 'tribe-extension' ),
+			esc_html__( 'General', 'tribe-ext-relabeler' ),
 			esc_url( $url )
 		);
 	}
