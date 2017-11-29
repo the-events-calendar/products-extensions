@@ -517,7 +517,7 @@ class Tribe__Extension__PDF_Tickets extends Tribe__Extension {
 	public function admin_flush_rewrite_rules_if_needed() {
 		global $pagenow;
 
-		if ( 'plugins.php' != $pagenow ) {
+		if ( 'plugins.php' !== $pagenow ) {
 			return;
 		}
 
