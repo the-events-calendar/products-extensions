@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     The Events Calendar Extension: Main Blog Loop
  * Description:     Additional options for including events in the main blog loop.
- * Version:         1.0.0
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension__Main_Blog_Loop
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -54,7 +54,9 @@ class Tribe__Extension__Main_Blog_Loop extends Tribe__Extension {
 	 * Adds settings options
 	 */
 	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		if ( ! class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
+			require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		}
 
 		$setting_helper = new Tribe__Settings_Helper();
 		$setting_helper->add_field(

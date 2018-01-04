@@ -2,7 +2,7 @@
 /**
  * Plugin Name: The Events Calendar Extension: Calendar Widget Areas
  * Description: Adds widget areas (a.k.a. sidebars) that only display on The Events Calendar pages/views. Areas may be enabled or disabled at wp-admin > Events > Settings > Display tab > Advanced Template Settings section. Note that the WP Customizer only allows you to manage widget areas that apply to the page you're currently previewing; therefore, you will need to navigate to your Events page, for example, to edit the content of those widget areas via the Customizer's live preview.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Extension Class: Tribe__Extension__Calendar_Widget_Areas
  * Author: Modern Tribe, Inc.
  * Author URI: http://m.tri.be/1971
@@ -222,7 +222,9 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 	 * @see Tribe__Extension__Settings_Helper
 	 */
 	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		if ( ! class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
+			require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		}
 
 		// Setup fields on the settings page
 		$setting_helper = new Tribe__Extension__Settings_Helper();

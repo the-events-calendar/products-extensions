@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     The Events Calendar Extension: Community Events Cost Currency Symbol
  * Description:     Adds a currency symbol selector option to the Community Events form (must first be setup at wp-admin > Events > Settings > Community tab > Form Defaults section). Additionally, the event creator can override the currency symbol's position instead of using your site's default from wp-admin > Events > Settings > General tab.
- * Version:         1.0.0
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension__CE_Event_Cost_Currency_Symbol
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -46,7 +46,9 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 	 * @see Tribe__Extension__Settings_Helper
 	 */
 	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		if ( ! class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
+			require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		}
 
 		// Setup fields on the settings page
 		$setting_helper = new Tribe__Extension__Settings_Helper();

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     Event Tickets Extension: Select Ticket Providers
  * Description:     Adds some checkboxes to WP Admin > Events > Settings > Tickets for choosing which Ticket Providers you want to use.
- * Version:         1.0.0
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension__Select_Ticket_Providers
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -63,7 +63,9 @@ class Tribe__Extension__Select_Ticket_Providers extends Tribe__Extension {
 	 * Add settings to tribe settings page
 	 */
 	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		if ( ! class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
+			require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		}
 
 		// Setup fields on the settings page
 		$setting_helper = new Tribe__Extension__Settings_Helper();
