@@ -30,6 +30,7 @@ class Tribe__Extension__CE_Event_Cost_Currency_Symbol extends Tribe__Extension {
 		$this->add_required_plugin( 'Tribe__Events__Community__Main', '4.5' );
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/community-events-cost-currency-symbol/' );
+		$this->set_version( '1.0.1' );
 	}
 
 	/**

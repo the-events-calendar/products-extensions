@@ -33,7 +33,8 @@ class Tribe__Extension__Selectively_Show_HTML extends Tribe__Extension {
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.3' );
 
-		$this->set_url( 'https://theeventscalendar.com/extensions/selectively-show-html-before-after-content/' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/extensions/display-custom-html-specific-calendar-views/' );
+		$this->set_version( '1.0.2' );
 	}
 
 	/**

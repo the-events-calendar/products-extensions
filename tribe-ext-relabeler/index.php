@@ -41,7 +41,8 @@ class Tribe__Extension__Relabeler extends Tribe__Extension {
 	 */
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main' );
-		$this->set_url( 'https://theeventscalendar.com/extensions/the-events-calendar-relabeler/' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/extensions/change-labels-events-venues-organizers/' );
+		$this->set_version( '1.0.1' );
 	}
 
 	/**

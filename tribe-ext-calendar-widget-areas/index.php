@@ -44,6 +44,7 @@ class Tribe__Extension__Calendar_Widget_Areas extends Tribe__Extension {
 
 		// Set the extension's TEC URL
 		$this->set_url( 'https://theeventscalendar.com/extensions/calendar-widget-areas/' );
+		$this->set_version( '1.0.1' );
 	}
 
 	/**

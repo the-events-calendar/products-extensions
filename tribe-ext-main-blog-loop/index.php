@@ -39,7 +39,8 @@ class Tribe__Extension__Main_Blog_Loop extends Tribe__Extension {
 	 */
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main' );
-		$this->set_url( 'https://theeventscalendar.com/extensions/the-events-calendar-main-blog-loop/' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/advanced-options-for-adding-events-to-the-main-blog-loop/' );
+		$this->set_version( '1.0.1' );
 	}
 
 	/**

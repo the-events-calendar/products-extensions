@@ -33,6 +33,7 @@ class Tribe__Extension__Eventbrite_Addl_Opts extends Tribe__Extension {
 
 		// Set the extension's TEC URL
 		$this->set_url( 'https://theeventscalendar.com/extensions/eventbrite-additional-options/' );
+		$this->set_version( '1.0.1' );
 	}
 
 	/**
