@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     The Events Calendar Extension: Selectively Show HTML Boxes
  * Description:     Adds fields to WP Admin > Events > Settings > Display for selecting which views to see the HTML Before/After content on. This allows you to show these boxes on views of your choosing.
- * Version:         1.0.1
+ * Version:         1.0.2
  * Extension Class: Tribe__Extension__Selectively_Show_HTML
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -33,7 +33,8 @@ class Tribe__Extension__Selectively_Show_HTML extends Tribe__Extension {
 	public function construct() {
 		$this->add_required_plugin( 'Tribe__Events__Main', '4.3' );
 
-		$this->set_url( 'https://theeventscalendar.com/extensions/selectively-show-html-before-after-content/' );
+		$this->set_url( 'https://theeventscalendar.com/extensions/extensions/display-custom-html-specific-calendar-views/' );
+		$this->set_version( '1.0.2' );
 	}
 
 	/**
@@ -53,7 +54,9 @@ class Tribe__Extension__Selectively_Show_HTML extends Tribe__Extension {
 	 * Add settings to tribe settings page
 	 */
 	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		if ( ! class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
+			require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		}
 
 		$avail_views = Tribe__Extension__View_Helper::get_available_views();
 		$field_view_options = array();

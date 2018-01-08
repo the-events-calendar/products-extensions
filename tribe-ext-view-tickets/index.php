@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     Event Tickets Plus Extension: Show and Print Tickets
  * Description:     Adds option for viewing and printing tickets, or downloading them as PDFs. In the admin area hover over an item in the Attendee List and click "View Tickets". Or, a ticket holder can view them from the frontend in their list of tickets for an event.
- * Version:         2.0.0
+ * Version:         2.0.1
  * Extension Class: Tribe__Extension__View_Print_Tickets
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -51,7 +51,7 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 		$this->add_required_plugin( 'Tribe__Tickets_Plus__Main' );
 
 		$this->set_url( 'https://theeventscalendar.com/extensions/show-print-tickets/' );
-		$this->set_version( '2.0.0' );
+		$this->set_version( '2.0.1' );
 	}
 
 	/**
@@ -92,7 +92,9 @@ class Tribe__Extension__View_Print_Tickets extends Tribe__Extension {
 	 * Adds settings options
 	 */
 	public function add_settings() {
-		require_once dirname( __FILE__ ) . '/src/Tribe/Extension/Settings_Helper.php';
+		if ( ! class_exists( 'Tribe__Extension__Settings_Helper' ) ) {
+			require_once dirname( __FILE__ ) . '/src/Tribe/Settings_Helper.php';
+		}
 		$setting_helper = new Tribe__Extension__Settings_Helper();
 
 		$fields = array(
