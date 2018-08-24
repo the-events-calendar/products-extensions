@@ -2,7 +2,7 @@
 /**
  * Plugin Name:     The Events Calendar PRO Extension: Display multiple events with the same venue in Map tooltips.
  * Description:     Show multiple events with the same venue in PRO's map tooltips.
- * Version:         1.0.0
+ * Version:         1.0.1
  * Extension Class: Tribe__Extension__Multiple_Events_Same_Venue
  * Author:          Modern Tribe, Inc.
  * Author URI:      http://m.tri.be/1971
@@ -42,10 +42,17 @@ class Tribe__Extension__Multiple_Events_Same_Venue extends Tribe__Extension {
 	}
 
 	public function dequeue_tribe_events_pro_geoloc() {
-		wp_dequeue_script( 'tribe-events-pro-geoloc' );
+		// we only need to shuffle if we're on an appropriate page (calendar or venue)
+		if ( tribe_is_event_query() || tribe_is_event_venue() ) {
+			wp_dequeue_script( 'tribe-events-pro-geoloc' );
+		}
 	}
 
 	public function enqueue_tribe_new_pro_geoloc() {
+		// if we're not on an appropriate page (calendar or venue), bail
+		if ( ! tribe_is_event_query() && ! tribe_is_event_venue() ) {
+			return;
+		}
 		$url = apply_filters( 'tribe_events_pro_google_maps_api', 'https://maps.google.com/maps/api/js' );
 
 		/**
