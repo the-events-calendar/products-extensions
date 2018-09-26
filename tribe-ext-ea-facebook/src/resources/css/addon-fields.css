@@ -1,0 +1,48 @@
+/* CSS for addon-fields.php */
+
+/* Connect button */
+.tribe-ea .tribe-ea-connect-button {
+	margin-left: 32px;
+	margin-left: 2rem;
+	margin-top: 16px;
+	margin-top: 1rem;
+}
+
+.tribe-ea-connect-button {
+	border-radius: 3px;
+	color: #fff;
+	display: inline-block;
+	padding: 8px 24px;
+	padding: .5rem 1.5rem;
+	text-decoration: none;
+	transition: background-color 0.5s ease;
+}
+
+.tribe-ea-connect-button:active,
+	.tribe-ea-connect-button:hover {
+	color: #fff;
+	cursor: pointer;
+}
+
+.tribe-ea-connect-button {
+	background: #3d599b;
+}
+
+.tribe-ea-connect-button:active,
+	.tribe-ea-connect-button:hover,
+	.tribe-ea-connect-button:focus {
+	background: #32497e;
+}
+
+/* Disconnect button */
+.tribe-ea-disconnect-button {
+	color: #a00;
+	display: inline-block;
+	margin-left: 16px;
+	margin-left: 1rem;
+}
+
+.tribe-ea-disconnect-button:active,
+	.tribe-ea-disconnect-button:hover {
+	color: #f00;
+}
