@@ -115,6 +115,23 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 	 */
 	public function init() {
 
+		// Register origin.
+		$this->add_registered_origin();
+
+		// Enable custom origin.
+		add_filter( 'tribe_aggregator_record_by_origin', array( $this, 'init_origin_record' ), 10, 3 );
+		add_filter( 'tribe_aggregator_source_origin_regexp', array( $this, 'add_origin_regexp' ) );
+		add_filter( 'tribe_aggregator_service_post_import_args', array( $this, 'add_site_url_to_post_args' ) );
+		add_filter( 'tribe_aggregator_event_translate_service_data_field_map', array( $this, 'add_field_map' ) );
+		add_filter( 'tribe_aggregator_event_translate_service_data_venue_field_map', array( $this, 'add_venue_field_map' ) );
+		add_filter( 'tribe_aggregator_event_translate_service_data_organizer_field_map', array( $this, 'add_organizer_field_map' ) );
+		add_filter( 'tribe_aggregator_import_validate_meta_by_origin', array( $this, 'validate_import_meta_by_origin' ), 10, 3 );
+
+		// Add Global ID origins.
+		add_filter( 'tribe_global_id_valid_types', array( $this, 'register_global_id_valid_types' ) );
+		add_filter( 'tribe_global_id_type_origins', array( $this, 'register_global_id_type_origins' ) );
+
+		// Add custom origin to UI.
 		add_filter( 'tribe_addons_tab_fields', array( $this, 'add_addon_fields' ) );
 		add_filter( 'tribe_aggregator_fields', array( $this, 'add_ea_settings_fields' ), 10, 4 );
 		add_action( 'tribe_events_status_third_party', array( $this, 'add_origin_to_status' ) );
@@ -122,6 +139,161 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 		add_action( 'tribe_events_aggregator_refine_keyword_exclusions', array( $this, 'add_origin_to_refine_exclusions' ) );
 		add_action( 'tribe_events_aggregator_refine_location_exclusions', array( $this, 'add_origin_to_refine_exclusions' ) );
 
+		// Handle disconnecting of token.
+		add_action( 'current_screen', array( $this, 'maybe_disconnect_ea_token' ) );
+
+		include_once __DIR__ . '/src/Tribe/Record.php';
+
+		// Filter origin import data to Add Site to URL
+		add_filter( 'tribe_aggregator_get_import_data_args', array( 'Tribe__Extension__Facebook_Dev_Origin__Record', 'filter_add_site_get_import_data' ), 10, 2 );
+
+		// Filter eventbrite events to preserve some fields that aren't supported by origin
+		add_filter( 'tribe_aggregator_before_update_event', array( 'Tribe__Extension__Facebook_Dev_Origin__Record', 'filter_event_to_preserve_fields' ), 10, 2 );
+
+	}
+
+	/**
+	 * Initialize record for origin.
+	 *
+	 * @param Tribe__Events__Aggregator__Record__Abstract|null $record Record object for given origin.
+	 * @param string                                           $origin Import origin.
+	 * @param WP_Post|null                                     $post   Record post data.
+	 *
+	 * @return Tribe__Events__Aggregator__Record__Abstract|null $record Record object for given origin.
+	 */
+	public function init_origin_record( $record, $origin, $post ) {
+
+		$origins = array(
+			self::get_origin(),
+			'ea/' . self::get_origin(),
+		);
+
+		if ( ! in_array( $origin, $origins, true ) ) {
+			return $record;
+		}
+
+		return new Tribe__Extension__Facebook_Dev_Origin__Record( $post );
+
+	}
+
+	/**
+	 * Add origin regexp pattern to list of supported patterns.
+	 *
+	 * @param array $origins Origin regexp patterns.
+	 *
+	 * @return array Origin regexp patterns.
+	 */
+	public function add_origin_regexp( $origins ) {
+
+		$origin = self::get_origin();
+
+		$origins[ $origin ] = self::get_origin_url_regex();
+
+		return $origins;
+
+	}
+
+	/**
+	 * Add origin to list of registered origins.
+	 */
+	public function add_registered_origin() {
+
+		/** @var Tribe__Events__Aggregator__API__Origins $origins */
+		$origins = tribe( 'events-aggregator.main' )->api( 'origins' );
+
+		$available_origins = $origins->origins;
+
+		$origin = self::get_origin();
+
+		$available_origins[ $origin ] = (object) array(
+			'id'       => $origin,
+			'name'     => self::get_origin_label(),
+			'disabled' => false,
+			'upsell'   => false,
+		);
+
+		$origins->origins = $available_origins;
+
+		$origin = self::get_origin();
+		$source = $this->get_source_id();
+
+		Tribe__Events__Aggregator__Record__Abstract::$unique_id_fields[ $origin ] = array(
+			'source' => $source,
+			'target' => $this->get_target_id(),
+		);
+
+		Tribe__Events__Aggregator__Record__Abstract::$unique_venue_id_fields[ $origin ] = array(
+			'source' => $source,
+			'target' => $this->get_target_id( 'venue' ),
+		);
+
+		Tribe__Events__Aggregator__Record__Abstract::$unique_organizer_id_fields[ $origin ] = array(
+			'source' => $source,
+			'target' => $this->get_target_id( 'organizer' ),
+		);
+
+	}
+
+	/**
+	 * Get Source ID for use with fields.
+	 *
+	 * @return string Source ID.
+	 */
+	public function get_source_id() {
+
+		$origin = self::get_origin();
+
+		$source  = str_replace( '-', '_', $origin );
+		$source .= '_id';
+
+		return $source;
+
+	}
+
+	/**
+	 * Get Target ID for use with fields.
+	 *
+	 * @param string $type Type of ID.
+	 *
+	 * @return string Target ID.
+	 */
+	public function get_target_id( $type = '' ) {
+
+		$origin = self::get_origin();
+
+		$target = str_replace( array( '_', '-' ), ' ', $origin );
+		$target = $type . ' ' . $target;
+		$target = ucwords( trim( $target ) );
+		$target = str_replace( ' ', '', $target ) . 'ID';
+
+		return $target;
+
+	}
+
+	/**
+	 * Register custom origins for Global_ID.
+	 *
+	 * @param array $valid_types List of origin types.
+	 *
+	 * @return array List of origin types.
+	 */
+	public function register_global_id_valid_types( $valid_types ) {
+		$valid_types[] = 'facebook-dev';
+
+		return $valid_types;
+	}
+
+	/**
+	 * Register custom origin URLs for Global_ID.
+	 *
+	 * @param array $type_origins List of origin URLs.
+	 *
+	 * @return array List of origin URLs.
+	 */
+	public function register_global_id_type_origins( $type_origins ) {
+		$type_origins['facebook-dev'] = 'facebook.com';
+
+		return $type_origins;
 	}
 
 	/**
@@ -274,6 +446,100 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 	}
 
 	/**
+	 * Add Site URL to args to send to post import.
+	 *
+	 * @param array $args Args to send to post import.
+	 *
+	 * @return array Args to send to post import.
+	 */
+	public function add_site_url_to_post_args( $args ) {
+
+		$args['site'] = site_url();
+
+		return $args;
+
+	}
+
+	/**
+	 * Add field mapping for origin.
+	 *
+	 * @param array $field_map Field mapping.
+	 *
+	 * @return array Field mapping.
+	 */
+	public function add_field_map( $field_map ) {
+
+		$source = $this->get_source_id();
+		$target = $this->get_target_id();
+
+		$field_map[ $source ] = $target;
+
+		return $field_map;
+
+	}
+
+	/**
+	 * Add venue field mapping for origin.
+	 *
+	 * @param array $field_map Field mapping.
+	 *
+	 * @return array Field mapping.
+	 */
+	public function add_venue_field_map( $field_map ) {
+
+		$source = $this->get_source_id();
+		$target = $this->get_target_id( 'venue' );
+
+		$field_map[ $source ] = $target;
+
+		return $field_map;
+
+	}
+
+	/**
+	 * Add organizer field mapping for origin.
+	 *
+	 * @param array $field_map Field mapping.
+	 *
+	 * @return array Field mapping.
+	 */
+	public function add_organizer_field_map( $field_map ) {
+
+		$source = $this->get_source_id();
+		$target = $this->get_target_id( 'organizer' );
+
+		$field_map[ $source ] = $target;
+
+		return $field_map;
+
+	}
+
+	/**
+	 * Validate the import meta for the origin.
+	 *
+	 * @param array|WP_Error $result The updated/validated meta array or A `WP_Error` if the validation failed.
+	 * @param string         $origin Origin name.
+	 * @param array          $meta   Import meta.
+	 *
+	 * @return array|WP_Error $result The updated/validated meta array or A `WP_Error` if the validation failed.
+	 */
+	public function validate_import_meta_by_origin( $result, $origin, $meta ) {
+
+		if ( self::get_origin() !== $origin ) {
+			return $result;
+		}
+
+		$origin_regex = self::get_origin_url_regex();
+
+		if ( empty( $meta['source'] ) || ! preg_match( '/' . $origin_regex . '/', $meta['source'] ) ) {
+			return new WP_Error( 'not-eventbrite-url', __( 'Please provide a Facebook URL when importing from Facebook.', 'the-events-calendar' ) );
+		}
+
+		return $result;
+
+	}
+
+	/**
 	 * Add origin to status table.
 	 *
 	 * @param array $indicator_icons List of indicator icons.
@@ -362,7 +628,7 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 		$data_depends   = '#tribe-ea-field-origin';
 		$data_condition = $origin;
 
-		if ( $is_token_valid ) {
+		if ( ! $is_token_valid ) {
 			$data_depends   = '#tribe-has-' . $origin . '-credentials';
 			$data_condition = '1';
 
@@ -437,7 +703,7 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 	/**
 	 * Authorize token with EA and setup security key if it's not set yet.
 	 *
-	 * @return boolean
+	 * @return object|WP_Error Authorization result or WP_Error if there was a problem.
 	 */
 	public function authorize_ea_token() {
 
@@ -446,19 +712,25 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 			return true;
 		}
 
-		// @todo do this
-		$authorization_response = tribe( 'events-aggregator.service' )->has_eventbrite_authorized();
+		$args = $this->get_ea_args();
 
-		if ( empty( $authorization_response->status ) || 'success' !== $authorization_response->status ) {
-			return false;
+		/** @var Tribe__Events__Aggregator__Service $ea_service */
+		$ea_service = tribe( 'events-aggregator.service' );
+
+		$response = $ea_service->get( sanitize_text_field( self::get_origin() ) . '/validate', $args );
+
+		// Handle errors.
+		if ( is_wp_error( $response ) || empty( $response->status ) || 'success' !== $response->status ) {
+			// @todo How to register/add error messages?
+			return tribe_error( 'core:aggregator:invalid-token', array(), array( 'response' => $response ) );
 		}
 
 		// The security key is sent on initial authorization, we need to save it if we have it.
-		if ( ! empty( $authorization_response->data->secret_key ) ) {
-			$this->set_ea_security_key( $authorization_response->data->secret_key );
+		if ( ! empty( $response->data->secret_key ) ) {
+			$this->set_ea_security_key( $response->data->secret_key );
 		}
 
-		return $this->is_ea_token_valid();
+		return $response;
 
 	}
 
@@ -523,18 +795,22 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 	 */
 	public function get_ea_security_key() {
 
-		return tribe_get_option( sanitize_text_field( self::get_origin() ) . '_security_key' );
+		$origin = sanitize_text_field( self::get_origin() );
+
+		return tribe_get_option( $origin . '_security_key' );
 
 	}
 
 	/**
 	 * Set origin security key for EA.
 	 *
-	 * @param string $security_key Origin security key for EA.
+	 * @param string|null $security_key Origin security key for EA.
 	 */
 	public function set_ea_security_key( $security_key ) {
 
-		tribe_update_option( sanitize_text_field( self::get_origin() ) . '_security_key', $security_key );
+		$origin = sanitize_text_field( self::get_origin() );
+
+		tribe_update_option( $origin . '_security_key', $security_key );
 
 	}
 
@@ -568,33 +844,9 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 	 */
 	public function is_ea_token_valid() {
 
-		$validate = $this->validate_ea_token();
+		$validate = $this->authorize_ea_token();
 
 		return $validate && ! is_wp_error( $validate );
-
-	}
-
-	/**
-	 * Validate token with EA.
-	 *
-	 * @return stdClass|WP_Error Response or WP_Error if there was a problem.
-	 */
-	public function validate_ea_token() {
-
-		$args = $this->get_ea_args();
-
-		/** @var Tribe__Events__Aggregator__Service $ea_service */
-		$ea_service = tribe( 'events-aggregator.service' );
-
-		$response = $ea_service->get( sanitize_text_field( self::get_origin() ) . '/validate', $args );
-
-		// If we have an WP_Error we return only CSV
-		if ( is_wp_error( $response ) ) {
-			// @todo How to register/add error messages?
-			return tribe_error( 'core:aggregator:invalid-token', array(), array( 'response' => $response ) );
-		}
-
-		return $response;
 
 	}
 
@@ -618,7 +870,46 @@ class Tribe__Extension__Facebook_Dev_Origin extends Tribe__Extension {
 			return tribe_error( 'core:aggregator:invalid-token', array(), array( 'response' => $response ) );
 		}
 
+		// Clear the EA security key for origin.
+		$this->set_ea_security_key( null );
+
 		return $response;
+
+	}
+
+	/**
+	 * Determine if we need to disconnect the origin.
+	 *
+	 * @param WP_Screen $screen Screen object.
+	 */
+	public function maybe_disconnect_ea_token( $screen ) {
+
+		if ( 'tribe_events_page_tribe-common' !== $screen->base ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['tab'] ) || 'addons' !== $_GET['tab'] ) {
+			return;
+		}
+
+		$origin = self::get_origin();
+
+		$action = 'disconnect-' . $origin;
+
+		if ( ! isset( $_GET['action'] ) || ! isset( $_GET['_wpnonce'] ) ) {
+			return;
+		}
+
+		if ( $action !== $_GET['action'] || ! wp_verify_nonce( $_GET['_wpnonce'], $action ) ) {
+			return;
+		}
+
+		$this->disconnect_ea_token();
+
+		$redirect_url = Tribe__Settings::instance()->get_url( array( 'tab' => 'addons' ) );
+
+		wp_redirect( $redirect_url );
+		die();
 
 	}
 
