@@ -145,7 +145,7 @@ class Tribe__Extension__Woo_Order_Templates extends Tribe__Extension {
 			$table_columns[] = array(
 				sprintf(
 					'<strong class="tribe-attendee-meta-heading">%1$s</strong>',
-					esc_html_x( 'Ticket ID', 'tribe-extension', 'Attendee meta table.' )
+					esc_html_x( 'Ticket ID', 'Attendee meta table.', 'tribe-extension' )
 				),
 				sprintf(
 					'<strong class="tribe-attendee-meta-heading">%1$s</strong>',
@@ -164,7 +164,7 @@ class Tribe__Extension__Woo_Order_Templates extends Tribe__Extension {
 			}
 
 			$table_columns[] = array(
-				esc_html_x( 'Security Code', 'tribe-extension', 'Attendee meta table.' ),
+				esc_html_x( 'Security Code', 'Attendee meta table.', 'tribe-extension' ),
 				esc_html( $attendee['security_code'] ),
 			);
 
