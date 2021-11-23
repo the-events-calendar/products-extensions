@@ -1,3 +1,11 @@
+# Note
+
+This repository is deprecated.
+
+For extensions for The Events Calendar products please visit [this repository](https://github.com/the-events-calendar/products-extensions).
+
+If you are looking for the most recent extension template, you can [find it here](https://github.com/mt-support/tribe-ext-extension-template).
+
 # Tribe Extensions
 
 Tribe Extensions are small plugins that add features to official Tribe plugins. They're designed to be installed and activated alongside the Tribe plugin that they extend. 
